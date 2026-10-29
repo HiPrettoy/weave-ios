@@ -115,9 +115,13 @@ struct LibraryView: View {
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
                                 store.delete(note)
+                                Haptics.tap()
                             } label: {
                                 Label("删除", systemImage: "trash")
                             }
+                            // App 全局 tint 是主题绿，不显式指定的话这里会跟着变成绿色/蓝色，
+                            // 而删除在系统语义里必须是红色。
+                            .tint(Color.red)
                         }
                     }
                 }

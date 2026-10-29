@@ -14,26 +14,16 @@ struct SettingsView: View {
     @State private var exportURL: URL?
     @State private var confirmWipe = false
     @State private var confirmSeed = false
-    @State private var customMode = false
     @State private var testing = false
     @State private var testMessage: String?
     @State private var testPassed = false
 
-    private var selectedPresetID: String {
-        if customMode { return LLMKeys.customID }
-        return LLMKeys.matchedPresetID(baseURL: llmBaseURL, model: llmModel) ?? LLMKeys.customID
+    private var trimmedBase: String {
+        llmBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func applySelection(_ id: String) {
-        testMessage = nil
-        if id == LLMKeys.customID {
-            customMode = true
-            return
-        }
-        guard let preset = LLMKeys.preset(id: id) else { return }
-        customMode = false
-        llmBaseURL = preset.baseURL
-        llmModel = preset.model
+    private var trimmedKey: String {
+        llmKey.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     @MainActor
@@ -107,43 +97,50 @@ struct SettingsView: View {
                 Section {
                     Toggle("启用云端增强", isOn: $llmEnabled)
 
-                    Picker(selection: Binding(get: { selectedPresetID }, set: { applySelection($0) })) {
-                        ForEach(LLMKeys.presets) { preset in
-                            Text(preset.name).tag(preset.id)
-                        }
-                        Text("自定义…").tag(LLMKeys.customID)
-                    } label: {
-                        Text("在线模型")
-                    }
+                    TextField("接口地址", text: $llmBaseURL)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                        .keyboardType(.URL)
+                        .font(.subheadline.monospaced())
 
-                    if selectedPresetID == LLMKeys.customID {
-                        TextField("接口地址", text: $llmBaseURL)
-                            .textInputAutocapitalization(.never)
-                            .disableAutocorrection(true)
-                            .keyboardType(.URL)
-                        TextField("模型名", text: $llmModel)
-                            .textInputAutocapitalization(.never)
-                            .disableAutocorrection(true)
-                    } else {
+                    Menu {
+                        ForEach(LLMKeys.presets) { preset in
+                            Button {
+                                llmBaseURL = preset.baseURL
+                                testMessage = nil
+                                Haptics.tap()
+                            } label: {
+                                Text("\(preset.name) — \(preset.baseURL)")
+                            }
+                        }
+                    } label: {
                         HStack {
-                            Text("接口地址")
+                            Text("常用服务商地址")
                             Spacer()
-                            Text(llmBaseURL)
+                            Text("点选快速填入")
                                 .font(.footnote)
                                 .foregroundStyle(Theme.inkSoft)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        HStack {
-                            Text("模型名")
-                            Spacer()
-                            Text(llmModel)
-                                .font(.footnote.monospaced())
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption2)
                                 .foregroundStyle(Theme.inkSoft)
                         }
                     }
 
                     SecureField("API Key", text: $llmKey)
+
+                    NavigationLink {
+                        ModelPickerView(baseURL: llmBaseURL, apiKey: llmKey, selected: $llmModel)
+                    } label: {
+                        HStack {
+                            Text("模型")
+                            Spacer()
+                            Text(llmModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "点这里获取" : llmModel)
+                                .font(.footnote.monospaced())
+                                .foregroundStyle(Theme.inkSoft)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    }
 
                     Button {
                         Task { await runConnectionTest() }
@@ -154,7 +151,7 @@ struct SettingsView: View {
                             if testing { ProgressView() }
                         }
                     }
-                    .disabled(testing || llmKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(testing || trimmedKey.isEmpty || trimmedBase.isEmpty)
 
                     if let testMessage {
                         Text(testMessage)
@@ -165,7 +162,7 @@ struct SettingsView: View {
                 } header: {
                     Text("AI 增强（可选）")
                 } footer: {
-                    Text("填了 Key 并打开开关后，笔记详情页会多出「用 AI 提炼摘要与概念」按钮。选好模型先点一次「测试连接」，通了再回去用。不启用则一切在端上完成，笔记不出手机。")
+                    Text("填地址和 Key 后，点「模型」会自动从该地址的 /models 接口取回可用模型列表，你挑一个即可，不用记模型名。配好后先点「测试连接」，通了再回去用。不启用则一切在端上完成，笔记不出手机。")
                 }
 
                 Section {

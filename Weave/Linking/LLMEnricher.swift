@@ -48,6 +48,90 @@ enum LLMEnricher {
         var reply: String
     }
 
+    // MARK: - 拉取在线可用模型
+
+    /// 各家 /models 的路径不一样（有的在 /v1/models，有的在 /paas/v4/models，
+    /// DeepSeek 的根域名也能直接 /models），所以按候选依次试，第一个成功的就用。
+    static func modelEndpointCandidates(from rawBase: String) -> [URL] {
+        var base = rawBase.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !base.isEmpty else { return [] }
+        while base.hasSuffix("/") { base.removeLast() }
+        if base.hasSuffix("/chat/completions") {
+            base = String(base.dropLast("/chat/completions".count))
+        }
+        var list: [URL] = []
+        func add(_ path: String) {
+            if let url = URL(string: base + path), !list.contains(url) { list.append(url) }
+        }
+        let hasVersion = base.range(of: #"/v\d+$"#, options: .regularExpression) != nil
+        if hasVersion {
+            add("/models")
+        } else {
+            add("/v1/models")
+            add("/models")
+        }
+        return list
+    }
+
+    /// GET /models，把返回里的模型 id 抽出来。OpenAI 兼容接口基本都回 {"data":[{"id":...}]}，
+    /// 少数实现用 {"models":[{"name":...}]}，两种都兼容。
+    static func fetchModels(baseURL: String, apiKey: String) async throws -> [String] {
+        let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { throw EnrichError.missingKey }
+        let candidates = modelEndpointCandidates(from: baseURL)
+        guard !candidates.isEmpty else { throw EnrichError.badURL }
+
+        var lastError: Error = EnrichError.badURL
+        for url in candidates {
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.timeoutInterval = 20
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+                if !(200...299).contains(code) {
+                    let body = String(data: data, encoding: .utf8) ?? ""
+                    let error = EnrichError.http(code, body)
+                    // 401/403 是 Key 的问题，换路径也没用，直接报出来
+                    if code == 401 || code == 403 { throw error }
+                    lastError = error
+                    continue
+                }
+                let ids = parseModelIDs(data)
+                if !ids.isEmpty { return ids }
+                lastError = EnrichError.emptyResponse(String(data: data, encoding: .utf8) ?? "返回为空")
+            } catch let error as EnrichError {
+                throw error
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError
+    }
+
+    static func parseModelIDs(_ data: Data) -> [String] {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [] }
+        var buckets: [[Any]] = []
+        if let data = object["data"] as? [[String: Any]] { buckets.append(data) }
+        if let models = object["models"] as? [[String: Any]] { buckets.append(models) }
+
+        var ids: [String] = []
+        for bucket in buckets {
+            for item in bucket {
+                let id = (item["id"] as? String)
+                    ?? (item["name"] as? String)
+                    ?? (item["model"] as? String)
+                guard let id, !id.isEmpty else { continue }
+                if !ids.contains(id) { ids.append(id) }
+            }
+            if !ids.isEmpty { break }
+        }
+        return ids.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
     /// 设置页的「测试连接」：发一条最小请求，能拿到回复才算配置可用。
     static func probe(baseURL: String, apiKey: String, model: String) async throws -> ProbeResult {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)

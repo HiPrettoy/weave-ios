@@ -15,6 +15,7 @@ struct PhotoCaptureView: View {
     @State private var pickerItem: PhotosPickerItem?
     @State private var hint: String?
     @State private var showFullImage = false
+    @State private var autoOpenedCamera = false
 
     var body: some View {
         NavigationStack {
@@ -51,10 +52,13 @@ struct PhotoCaptureView: View {
                 }
             }
             .fullScreenCover(isPresented: $showCamera) {
-                CameraPicker { picked in
+                CameraPicker(onImage: { picked in
                     showCamera = false
                     Task { await handle(picked) }
-                }
+                }, onCancel: {
+                    // 取消后留在本页，「从相册选」就在下面
+                    showCamera = false
+                })
                 .ignoresSafeArea()
             }
             .fullScreenCover(isPresented: $showFullImage) {
@@ -84,6 +88,14 @@ struct PhotoCaptureView: View {
             }
             .onChange(of: pickerItem?.itemIdentifier) { _ in
                 loadFromLibrary()
+            }
+            // 从首页点「拍照」进来就直接是相机，取消后回到本页再从相册选。
+            // 刚 present 完立刻再弹 cover 会被系统吞掉，所以等一拍再弹。
+            .task {
+                guard !autoOpenedCamera, image == nil else { return }
+                autoOpenedCamera = true
+                try? await Task.sleep(nanoseconds: 420_000_000)
+                if image == nil && !showCamera { showCamera = true }
             }
         }
     }
@@ -238,7 +250,7 @@ struct PhotoCaptureView: View {
 
 struct CameraPicker: UIViewControllerRepresentable {
     var onImage: (UIImage) -> Void
-    @Environment(\.dismiss) private var dismiss
+    var onCancel: () -> Void
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
@@ -269,7 +281,7 @@ struct CameraPicker: UIViewControllerRepresentable {
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
+            parent.onCancel()
         }
     }
 }

@@ -8,6 +8,7 @@ struct CaptureView: View {
     @State private var showPhoto = false
     @State private var showManual = false
     @State private var toast: String?
+    @State private var selectedNoteID: UUID?
     @FocusState private var draftFocused: Bool
 
     private var recent: [Note] {
@@ -29,6 +30,14 @@ struct CaptureView: View {
             .scrollDismissesKeyboard(.interactively)
             .background(Theme.background.ignoresSafeArea())
             .navigationBarHidden(true)
+            .navigationDestination(isPresented: Binding(
+                get: { selectedNoteID != nil },
+                set: { if !$0 { selectedNoteID = nil } }
+            )) {
+                if let id = selectedNoteID {
+                    NoteDetailView(noteID: id)
+                }
+            }
             .sheet(isPresented: $showVoice) {
                 VoiceCaptureView().environmentObject(store)
             }
@@ -136,7 +145,7 @@ struct CaptureView: View {
             methodButton(title: "语音", icon: "waveform", caption: "说出来\n自动转文字", tint: Theme.accent) {
                 showVoice = true
             }
-            methodButton(title: "拍照", icon: "camera.viewfinder", caption: "书页板书\nOCR 提字", tint: Theme.warm) {
+            methodButton(title: "拍照", icon: "camera.viewfinder", caption: "点开即相机\nOCR 提字", tint: Theme.warm) {
                 showPhoto = true
             }
             methodButton(title: "手记", icon: "square.and.pencil", caption: "写长一点\n再打标签", tint: Color(uiColor: .systemIndigo)) {
@@ -185,8 +194,8 @@ struct CaptureView: View {
                     .foregroundStyle(Theme.ink)
                 Spacer()
                 if !store.notes.isEmpty {
-                    Text("共 \(store.notes.count) 条")
-                        .font(.caption)
+                    Text("共 \(store.notes.count) 条 · 左滑可删除")
+                        .font(.caption2)
                         .foregroundStyle(Theme.inkSoft)
                 }
             }
@@ -201,13 +210,11 @@ struct CaptureView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(recent.enumerated()), id: \.element.id) { index, note in
-                        NavigationLink {
-                            NoteDetailView(noteID: note.id)
-                        } label: {
+                        SwipeDeleteRow(onTap: { selectedNoteID = note.id },
+                                       onDelete: { delete(note) }) {
                             NoteRow(note: note)
                                 .padding(.vertical, 10)
                         }
-                        .buttonStyle(.plain)
 
                         if index < recent.count - 1 {
                             Divider().opacity(0.4)
@@ -222,8 +229,12 @@ struct CaptureView: View {
         }
     }
 
-    private func showToast(_ message: String) {
-        withAnimation(.easeOut(duration: 0.22)) { toast = message }
+    private func delete(_ note: Note) {
+        store.delete(note)
+        showToast("已删除这条笔记")
+    }
+
+    private func showToast(_ message: String) {        withAnimation(.easeOut(duration: 0.22)) { toast = message }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
             withAnimation(.easeOut(duration: 0.2)) { toast = nil }
         }
