@@ -110,7 +110,7 @@ struct GraphView: View {
                 guard let point = positions[note.id] else { continue }
                 let centerPoint = CGPoint(x: point.x - center.x, y: point.y - center.y)
                 let degree = degrees[note.id] ?? 0
-                let radius = CGFloat(5 + min(9, degree * 1.6))
+                let radius = CGFloat(5.0 + min(9.0, Double(degree) * 1.6))
                 let rect = CGRect(x: centerPoint.x - radius,
                                   y: centerPoint.y - radius,
                                   width: radius * 2,
