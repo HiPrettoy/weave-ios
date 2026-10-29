@@ -126,13 +126,20 @@ struct SettingsView: View {
                         }
                     }
 
-                    SecureField("API Key", text: $llmKey)
+                    HStack(spacing: 12) {
+                        Text("API Key")
+                        SecureField("粘贴你的 Key", text: $llmKey)
+                            .multilineTextAlignment(.trailing)
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                            .font(.subheadline.monospaced())
+                    }
 
                     NavigationLink {
                         ModelPickerView(baseURL: llmBaseURL, apiKey: llmKey, selected: $llmModel)
                     } label: {
                         HStack {
-                            Text("模型")
+                            Text("在线模型")
                             Spacer()
                             Text(llmModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "点这里获取" : llmModel)
                                 .font(.footnote.monospaced())
@@ -162,7 +169,7 @@ struct SettingsView: View {
                 } header: {
                     Text("AI 增强（可选）")
                 } footer: {
-                    Text("填地址和 Key 后，点「模型」会自动从该地址的 /models 接口取回可用模型列表，你挑一个即可，不用记模型名。配好后先点「测试连接」，通了再回去用。不启用则一切在端上完成，笔记不出手机。")
+                    Text("填地址和 Key 后，点「在线模型」会自动从该地址的 /models 接口取回可用模型列表，你挑一个即可，不用记模型名。配好后先点「测试连接」，通了再回去用。不启用则一切在端上完成，笔记不出手机。")
                 }
 
                 Section {
