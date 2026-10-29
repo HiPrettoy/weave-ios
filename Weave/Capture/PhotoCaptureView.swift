@@ -14,6 +14,7 @@ struct PhotoCaptureView: View {
     @State private var showCamera = false
     @State private var pickerItem: PhotosPickerItem?
     @State private var hint: String?
+    @State private var showFullImage = false
 
     var body: some View {
         NavigationStack {
@@ -56,6 +57,31 @@ struct PhotoCaptureView: View {
                 }
                 .ignoresSafeArea()
             }
+            .fullScreenCover(isPresented: $showFullImage) {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    if let image {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .padding(8)
+                    }
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button {
+                                showFullImage = false
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundStyle(.white.opacity(0.85))
+                                    .padding(16)
+                            }
+                        }
+                        Spacer()
+                    }
+                }
+            }
             .onChange(of: pickerItem?.itemIdentifier) { _ in
                 loadFromLibrary()
             }
@@ -71,10 +97,11 @@ struct PhotoCaptureView: View {
             if let image {
                 // 只给高度不给宽度时，scaledToFill 会按原图长宽比把宽度撑到屏幕外，
                 // 整个 ZStack 跟着变宽，看起来就是「图突然变大、显示不全」。
-                // 这里把外框尺寸钉死，再统一裁剪。
+                // 这里把外框尺寸钉死，再用 fit 保证整张图都在框里；点一下能看大图。
                 Image(uiImage: image)
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
+                    .padding(6)
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "doc.text.viewfinder")
@@ -105,6 +132,10 @@ struct PhotoCaptureView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Theme.hairline.opacity(0.5), lineWidth: 0.5)
         )
+        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .onTapGesture {
+            if image != nil { showFullImage = true }
+        }
     }
 
     private var actions: some View {
