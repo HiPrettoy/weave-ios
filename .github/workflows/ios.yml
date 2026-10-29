@@ -1,0 +1,88 @@
+name: Build unsigned IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号（写入 IPA 文件名，用于 TrollStore 安装校验）"
+        required: false
+        default: "1.0.0"
+
+jobs:
+  build:
+    name: Archive & package
+    runs-on: macos-15
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install XcodeGen
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build & archive (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project Weave.xcodeproj \
+            -scheme Weave \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Weave.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
+            ONLY_ACTIVE_ARCH=NO
+
+      - name: Package Payload into IPA
+        id: package
+        run: |
+          set -e
+          VERSION="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION" ]; then VERSION="1.0.0"; fi
+          APP_PATH="build/Weave.xcarchive/Products/Applications/Weave.app"
+          test -d "$APP_PATH"
+          mkdir -p build/Payload
+          cp -R "$APP_PATH" build/Payload/
+          # 清掉可能残留的签名，交给 TrollStore / 侧载工具重新签
+          rm -rf build/Payload/Weave.app/_CodeSignature || true
+          cd build
+          zip -qry "Weave-v${VERSION}.ipa" Payload
+          ls -lh "Weave-v${VERSION}.ipa"
+          echo "ipa=build/Weave-v${VERSION}.ipa" >> "$GITHUB_OUTPUT"
+          echo "name=Weave-v${VERSION}.ipa" >> "$GITHUB_OUTPUT"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: weave-unsigned-ipa
+          path: ${{ steps.package.outputs.ipa }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: |
+            build/Logs
+            ~/Library/Logs/xcodebuild
+          if-no-files-found: ignore

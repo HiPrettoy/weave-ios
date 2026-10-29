@@ -1,0 +1,21 @@
+# 生成物
+build/
+*.xcarchive
+*.ipa
+*.dSYM
+DerivedData/
+
+# XcodeGen 生成，不进仓库
+Weave.xcodeproj/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# 系统
+.DS_Store
+__pycache__/
+*.pyc
+
+# 签名相关（绝不入库）
+*.p12
+*.mobileprovision
+*.cer

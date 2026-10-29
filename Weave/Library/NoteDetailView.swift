@@ -1,0 +1,362 @@
+import SwiftUI
+import UIKit
+
+struct NoteDetailView: View {
+    @EnvironmentObject private var store: AppStore
+    @Environment(\.dismiss) private var dismiss
+
+    let noteID: UUID
+
+    @State private var draft: Note?
+    @State private var tagInput = ""
+    @State private var isEnriching = false
+    @State private var errorMessage: String?
+    @State private var confirmDelete = false
+
+    var body: some View {
+        Group {
+            if let note = draft {
+                content(note)
+            } else {
+                Text("这条笔记已经不在了")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.inkSoft)
+            }
+        }
+        .onAppear {
+            if draft == nil { draft = store.note(id: noteID) }
+        }
+        .navigationTitle("笔记")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: - 主体
+
+    private func content(_ note: Note) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                meta(note)
+
+                if let data = note.imageData, let ui = UIImage(data: data) {
+                    Image(uiImage: ui)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+
+                if !note.summary.isEmpty {
+                    Text(note.summary)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.ink)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.accentSoft))
+                }
+
+                TextField("标题", text: binding(\.title, fallback: ""))
+                    .font(.title3.weight(.semibold))
+
+                TextEditor(text: binding(\.content, fallback: ""))
+                    .frame(minHeight: 220)
+                    .scrollContentBackground(.hidden)
+                    .font(.body)
+
+                tagSection(note)
+                conceptSection(note)
+                relatedSection(note)
+                reviewSection(note)
+                actions(note)
+            }
+            .padding(20)
+        }
+        .background(Theme.background.ignoresSafeArea())
+        .onDisappear {
+            // 离开时统一重算一次关联，避免每敲一个字都跑一遍 O(n²)
+            store.saveNow()
+            store.rebuildLinks()
+        }
+        .confirmationDialog("删除这条笔记？", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("删除", role: .destructive) {
+                if let note = draft { store.delete(note) }
+                dismiss()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("与它相关的关联也会一起移除，且无法恢复。")
+        }
+        .alert("出错了", isPresented: errorBinding) {
+            Button("好", role: .cancel) { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    private var errorBinding: Binding<Bool> {
+        Binding(get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } })
+    }
+
+    private func meta(_ note: Note) -> some View {
+        HStack(spacing: 8) {
+            Label(note.source.label, systemImage: note.source.symbol)
+            Text("·")
+            Text(dateText(note.createdAt))
+            if note.updatedAt.timeIntervalSince(note.createdAt) > 60 {
+                Text("· 已编辑")
+            }
+            Spacer()
+            Button {
+                store.toggleFavorite(note)
+                Haptics.tap()
+                draft = store.note(id: noteID)
+            } label: {
+                Image(systemName: note.isFavorite ? "star.fill" : "star")
+                    .foregroundStyle(note.isFavorite ? Theme.warm : Theme.inkSoft)
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(Theme.inkSoft)
+    }
+
+    private func tagSection(_ note: Note) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("标签")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.inkSoft)
+
+            if !note.tags.isEmpty {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 64), spacing: 6)],
+                          alignment: .leading,
+                          spacing: 6) {
+                    ForEach(note.tags, id: \.self) { tag in
+                        HStack(spacing: 4) {
+                            Text("#\(tag)")
+                                .font(.caption2)
+                                .foregroundStyle(Theme.accent)
+                            Button {
+                                removeTag(tag)
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundStyle(Theme.inkSoft)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Theme.accentSoft))
+                    }
+                }
+            }
+
+            HStack(spacing: 8) {
+                TextField("加标签（回车确认）", text: $tagInput)
+                    .font(.subheadline)
+                    .onSubmit { addTag() }
+                Button("添加", action: addTag)
+                    .font(.caption.weight(.semibold))
+                    .disabled(tagInput.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .card()
+    }
+
+    private func conceptSection(_ note: Note) -> some View {
+        Group {
+            if !note.concepts.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("AI 提炼的概念")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.inkSoft)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 72), spacing: 6)],
+                              alignment: .leading,
+                              spacing: 6) {
+                        ForEach(note.concepts, id: \.self) { concept in
+                            Text(concept)
+                                .font(.caption2)
+                                .foregroundStyle(Theme.ink)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(Theme.card))
+                        }
+                    }
+                }
+                .card()
+            }
+        }
+    }
+
+    private func relatedSection(_ note: Note) -> some View {
+        let related = store.related(to: note)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("自动关联")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.inkSoft)
+                Spacer()
+                Text("\(related.count) 条")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.inkSoft)
+            }
+
+            if related.isEmpty {
+                Text("暂时没有找到相关笔记。再多记几条，关联会自己长出来。")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.inkSoft)
+            } else {
+                ForEach(related.indices, id: \.self) { index in
+                    let item = related[index]
+                    NavigationLink {
+                        NoteDetailView(noteID: item.0.id)
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: item.2.symbol)
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(Theme.accent)
+                                .frame(width: 24, height: 24)
+                                .background(Circle().fill(Theme.accentSoft))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.0.displayTitle)
+                                    .font(.subheadline)
+                                    .foregroundStyle(Theme.ink)
+                                    .lineLimit(1)
+                                Text("\(item.2.label) · 相似度 \(String(format: "%.2f", item.1))")
+                                    .font(.caption2)
+                                    .foregroundStyle(Theme.inkSoft)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundStyle(Theme.inkSoft.opacity(0.6))
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    if index < related.count - 1 {
+                        Divider().opacity(0.35)
+                    }
+                }
+            }
+        }
+        .card()
+    }
+
+    private func reviewSection(_ note: Note) -> some View {
+        Group {
+            if let card = store.card(for: note.id) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("复习安排")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.inkSoft)
+                    Text("下次复习：\(dateText(card.due))")
+                        .font(.footnote)
+                        .foregroundStyle(Theme.ink)
+                    Text("已复习 \(card.reps) 次 · 遗忘 \(card.lapses) 次 · 间隔 \(SRS.humanized(card.intervalDays))")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .card()
+            }
+        }
+    }
+
+    private func actions(_ note: Note) -> some View {
+        VStack(spacing: 10) {
+            if LLMKeys.isEnabled {
+                Button {
+                    enrich(note)
+                } label: {
+                    HStack(spacing: 6) {
+                        if isEnriching {
+                            ProgressView().scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "sparkles")
+                        }
+                        Text(isEnriching ? "正在提炼…" : "用 AI 提炼摘要与概念")
+                    }
+                    .font(.subheadline.weight(.medium))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.accentSoft))
+                    .foregroundStyle(Theme.accent)
+                }
+                .disabled(isEnriching)
+            }
+
+            ShareLink(item: note.plainText) {
+                Label("分享为纯文本", systemImage: "square.and.arrow.up")
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.card))
+                    .foregroundStyle(Theme.ink)
+            }
+
+            Button {
+                confirmDelete = true
+            } label: {
+                Label("删除这条笔记", systemImage: "trash")
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.red.opacity(0.08)))
+                    .foregroundStyle(Color.red.opacity(0.85))
+            }
+        }
+    }
+
+    // MARK: - 绑定与操作
+
+    private func binding<T>(_ keyPath: WritableKeyPath<Note, T>, fallback: T) -> Binding<T> {
+        Binding<T>(
+            get: {
+                guard let current = draft else { return fallback }
+                return current[keyPath: keyPath]
+            },
+            set: { newValue in
+                guard var current = draft else { return }
+                current[keyPath: keyPath] = newValue
+                draft = current
+                store.update(current)
+            }
+        )
+    }
+
+    private func addTag() {
+        let tags = parseTags(tagInput)
+        guard !tags.isEmpty, var current = draft else { return }
+        for tag in tags where !current.tags.contains(tag) {
+            current.tags.append(tag)
+        }
+        tagInput = ""
+        draft = current
+        store.update(current)
+    }
+
+    private func removeTag(_ tag: String) {
+        guard var current = draft else { return }
+        current.tags.removeAll { $0 == tag }
+        draft = current
+        store.update(current)
+    }
+
+    private func enrich(_ note: Note) {
+        isEnriching = true
+        Task {
+            do {
+                try await store.enrich(note, config: LLMKeys.config)
+                draft = store.note(id: noteID)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isEnriching = false
+        }
+    }
+
+    private func dateText(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月d日 HH:mm"
+        return formatter.string(from: date)
+    }
+}
