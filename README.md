@@ -14,9 +14,9 @@
 |---|---|---|
 | <img src="docs/shots/01-home.png" width="240"> | <img src="docs/shots/02-note.png" width="240"> | <img src="docs/shots/03-graph.png" width="240"> |
 
-| 语音实时转写 | 复习 |
-|---|---|
-| <img src="docs/shots/04-voice.png" width="240"> | <img src="docs/shots/05-review.png" width="240"> |
+| 语音实时转写 | 复习 | 设置（模型/Key） |
+|---|---|---|
+| <img src="docs/shots/04-voice.png" width="240"> | <img src="docs/shots/05-review.png" width="240"> | <img src="docs/shots/06-settings.png" width="240"> |
 
 > 以上均为 iPhone（iOS 16.7.16）真机截图，非模拟器。
 
