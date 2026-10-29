@@ -8,6 +8,8 @@ struct VoiceCaptureView: View {
     @State private var edited = ""
     @State private var tagText = ""
     @State private var requestedPermission = false
+    /// 本轮录音之前输入框里已有的文字，转写结果追加在它后面
+    @State private var prefix = ""
 
     var body: some View {
         NavigationStack {
@@ -55,7 +57,11 @@ struct VoiceCaptureView: View {
                 if granted { speech.start() }
             }
             .onChange(of: speech.transcript) { newValue in
-                edited = newValue
+                // 只在录音过程中同步，停止之后系统迟到的回调不许再改动输入框
+                guard speech.isRecording else { return }
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return }
+                edited = prefix + newValue
             }
             .onDisappear {
                 speech.stop()
@@ -85,9 +91,14 @@ struct VoiceCaptureView: View {
         Button {
             Haptics.tap()
             if speech.isRecording {
+                // 先留一份，再停：停止瞬间的迟到回调可能把 transcript 改空
+                let snapshot = speech.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
                 speech.stop()
-                edited = speech.transcript
+                if !snapshot.isEmpty {
+                    edited = prefix + speech.transcript
+                }
             } else {
+                prefix = edited.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : edited + "\n"
                 speech.start()
             }
         } label: {

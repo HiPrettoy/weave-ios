@@ -72,7 +72,7 @@ struct GraphView: View {
             }
             .sheet(item: $selectedNote) { note in
                 NavigationStack {
-                    NoteDetailView(noteID: note.id)
+                    NoteDetailView(noteID: note.id, initial: note)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("关闭") { selectedNote = nil }

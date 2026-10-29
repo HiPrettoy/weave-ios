@@ -34,14 +34,54 @@ enum LLMEnricher {
     static func endpoint(from rawBase: String) -> URL? {
         var base = rawBase.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !base.isEmpty else { return nil }
-        if base.hasSuffix("/") { base.removeLast() }
+        while base.hasSuffix("/") { base.removeLast() }
         if base.hasSuffix("/chat/completions") {
             return URL(string: base)
         }
-        if base.hasSuffix("/v1") {
-            return URL(string: base + "/chat/completions")
+        // 已经带版本段（/v1、/paas/v4 …）就只补路径，否则补 /v1 再补路径
+        let hasVersion = base.range(of: #"/v\d+$"#, options: .regularExpression) != nil
+        return URL(string: base + (hasVersion ? "/chat/completions" : "/v1/chat/completions"))
+    }
+
+    struct ProbeResult {
+        var latencyMs: Int
+        var reply: String
+    }
+
+    /// 设置页的「测试连接」：发一条最小请求，能拿到回复才算配置可用。
+    static func probe(baseURL: String, apiKey: String, model: String) async throws -> ProbeResult {
+        let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { throw EnrichError.missingKey }
+        guard let url = endpoint(from: baseURL) else { throw EnrichError.badURL }
+
+        let body: [String: Any] = [
+            "model": model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "deepseek-chat" : model,
+            "temperature": 0,
+            "max_tokens": 16,
+            "messages": [["role": "user", "content": "只回复两个字：可用"]]
+        ]
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 20
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let started = Date()
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let latency = Int(Date().timeIntervalSince(started) * 1000)
+
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw EnrichError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
         }
-        return URL(string: base + "/v1/chat/completions")
+        guard let decoded = try? JSONDecoder().decode(Payload.self, from: data),
+              let text = decoded.choices.first?.message?.content,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw EnrichError.emptyResponse(String(data: data, encoding: .utf8) ?? "返回为空")
+        }
+        return ProbeResult(latencyMs: latency,
+                           reply: text.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     static func enrich(title: String,

@@ -66,20 +66,15 @@ struct PhotoCaptureView: View {
 
     private var preview: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Theme.card)
-                .frame(height: 240)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Theme.hairline.opacity(0.5), lineWidth: 0.5)
-                )
+            Theme.card
 
             if let image {
+                // 只给高度不给宽度时，scaledToFill 会按原图长宽比把宽度撑到屏幕外，
+                // 整个 ZStack 跟着变宽，看起来就是「图突然变大、显示不全」。
+                // 这里把外框尺寸钉死，再统一裁剪。
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
-                    .frame(height: 240)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "doc.text.viewfinder")
@@ -93,8 +88,7 @@ struct PhotoCaptureView: View {
 
             if isRecognizing {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.black.opacity(0.35))
+                    Color.black.opacity(0.35)
                     VStack(spacing: 10) {
                         ProgressView()
                         Text("正在识别文字…")
@@ -102,9 +96,15 @@ struct PhotoCaptureView: View {
                             .foregroundStyle(.white)
                     }
                 }
-                .frame(height: 240)
             }
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 240)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Theme.hairline.opacity(0.5), lineWidth: 0.5)
+        )
     }
 
     private var actions: some View {

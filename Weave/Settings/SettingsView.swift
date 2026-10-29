@@ -14,6 +14,43 @@ struct SettingsView: View {
     @State private var exportURL: URL?
     @State private var confirmWipe = false
     @State private var confirmSeed = false
+    @State private var customMode = false
+    @State private var testing = false
+    @State private var testMessage: String?
+    @State private var testPassed = false
+
+    private var selectedPresetID: String {
+        if customMode { return LLMKeys.customID }
+        return LLMKeys.matchedPresetID(baseURL: llmBaseURL, model: llmModel) ?? LLMKeys.customID
+    }
+
+    private func applySelection(_ id: String) {
+        testMessage = nil
+        if id == LLMKeys.customID {
+            customMode = true
+            return
+        }
+        guard let preset = LLMKeys.preset(id: id) else { return }
+        customMode = false
+        llmBaseURL = preset.baseURL
+        llmModel = preset.model
+    }
+
+    @MainActor
+    private func runConnectionTest() async {
+        testing = true
+        testMessage = nil
+        do {
+            let result = try await LLMEnricher.probe(baseURL: llmBaseURL, apiKey: llmKey, model: llmModel)
+            testPassed = true
+            testMessage = "连接成功 · \(result.latencyMs) ms · 模型回复「\(result.reply)」"
+            Haptics.success()
+        } catch {
+            testPassed = false
+            testMessage = "连接失败：\(error.localizedDescription)"
+        }
+        testing = false
+    }
 
     var body: some View {
         NavigationStack {
@@ -69,18 +106,66 @@ struct SettingsView: View {
 
                 Section {
                     Toggle("启用云端增强", isOn: $llmEnabled)
-                    TextField("接口地址", text: $llmBaseURL)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
-                        .keyboardType(.URL)
-                    TextField("模型名", text: $llmModel)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
+
+                    Picker(selection: Binding(get: { selectedPresetID }, set: { applySelection($0) })) {
+                        ForEach(LLMKeys.presets) { preset in
+                            Text(preset.name).tag(preset.id)
+                        }
+                        Text("自定义…").tag(LLMKeys.customID)
+                    } label: {
+                        Text("在线模型")
+                    }
+
+                    if selectedPresetID == LLMKeys.customID {
+                        TextField("接口地址", text: $llmBaseURL)
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                            .keyboardType(.URL)
+                        TextField("模型名", text: $llmModel)
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                    } else {
+                        HStack {
+                            Text("接口地址")
+                            Spacer()
+                            Text(llmBaseURL)
+                                .font(.footnote)
+                                .foregroundStyle(Theme.inkSoft)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        HStack {
+                            Text("模型名")
+                            Spacer()
+                            Text(llmModel)
+                                .font(.footnote.monospaced())
+                                .foregroundStyle(Theme.inkSoft)
+                        }
+                    }
+
                     SecureField("API Key", text: $llmKey)
+
+                    Button {
+                        Task { await runConnectionTest() }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Label("测试连接", systemImage: "bolt.horizontal.circle")
+                            Spacer()
+                            if testing { ProgressView() }
+                        }
+                    }
+                    .disabled(testing || llmKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                    if let testMessage {
+                        Text(testMessage)
+                            .font(.footnote)
+                            .foregroundStyle(testPassed ? Theme.accent : Color.red.opacity(0.85))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 } header: {
                     Text("AI 增强（可选）")
                 } footer: {
-                    Text("填了 Key 并打开开关后，笔记详情页会多出「用 AI 提炼摘要与概念」按钮。不填则一切在端上完成，笔记不出手机。")
+                    Text("填了 Key 并打开开关后，笔记详情页会多出「用 AI 提炼摘要与概念」按钮。选好模型先点一次「测试连接」，通了再回去用。不启用则一切在端上完成，笔记不出手机。")
                 }
 
                 Section {
@@ -121,7 +206,7 @@ struct SettingsView: View {
                     HStack {
                         Text("版本")
                         Spacer()
-                        Text("1.0.0")
+                        Text(AppInfo.version)
                             .foregroundStyle(Theme.inkSoft)
                     }
                     HStack {
@@ -171,5 +256,14 @@ struct SettingsView: View {
                 Text("笔记、关联、复习进度都会删除，无法恢复。")
             }
         }
+    }
+}
+
+/// 从 App 的 Info.plist 读版本，避免设置页里写死的版本号与实际包里对不上
+enum AppInfo {
+    static var version: String {
+        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "\(short) (\(build))"
     }
 }

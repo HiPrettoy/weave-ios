@@ -16,6 +16,9 @@ final class SpeechService: ObservableObject {
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var tapInstalled = false
+    /// 用户已经按了停止：此后识别回调一律不再写 transcript。
+    /// 否则 cancel 之后迟到的空结果会把已经识别出来的文字抹掉。
+    private var isFinishing = false
 
     func requestPermissions() async -> Bool {
         let speechGranted: Bool = await withCheckedContinuation { continuation in
@@ -42,6 +45,7 @@ final class SpeechService: ObservableObject {
 
     func start() {
         guard !isRecording else { return }
+        isFinishing = false
         DispatchQueue.main.async {
             self.errorMessage = nil
             self.transcript = ""
@@ -83,11 +87,15 @@ final class SpeechService: ObservableObject {
                 guard let self else { return }
                 if let result {
                     let text = result.bestTranscription.formattedString
-                    DispatchQueue.main.async { self.transcript = text }
+                    // 空结果一律不覆盖：短音频收尾时系统偶尔会回一条空的终稿，
+                    // 直接写进去就会表现为「一按停止，刚说的话全没了」。
+                    if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        DispatchQueue.main.async { self.transcript = text }
+                    }
                 }
                 if error != nil {
                     DispatchQueue.main.async {
-                        if self.isRecording { self.stop() }
+                        if self.isRecording { self.stop(autoStopped: true) }
                     }
                 }
             }
@@ -101,7 +109,11 @@ final class SpeechService: ObservableObject {
         }
     }
 
-    func stop() {
+    /// autoStopped 表示是被系统中断/出错顺带停的，此时保留已经识别到的文字；
+    /// 手动停止与自动停止都不清空 transcript，清空只发生在下一次 start()。
+    func stop(autoStopped: Bool = false) {
+        let alreadyStopping = isFinishing
+        isFinishing = true
         if engine.isRunning {
             engine.stop()
         }
@@ -110,9 +122,18 @@ final class SpeechService: ObservableObject {
             tapInstalled = false
         }
         request?.endAudio()
-        task?.cancel()
+        // endAudio 后给识别任务一点时间交出终稿，再取消；直接 cancel 会丢掉最后一段
+        if !autoStopped && !alreadyStopping {
+            let pending = task
+            task = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                pending?.cancel()
+            }
+        } else {
+            task?.cancel()
+            task = nil
+        }
         request = nil
-        task = nil
         DispatchQueue.main.async { self.isRecording = false }
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }

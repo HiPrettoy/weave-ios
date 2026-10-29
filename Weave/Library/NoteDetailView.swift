@@ -6,6 +6,10 @@ struct NoteDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     let noteID: UUID
+    /// 调用方（图谱）手里已经有这条笔记的完整值，直接带进来做兜底。
+    /// 只靠 noteID 去 store 里查，一旦查询时点不对（sheet 的 onAppear 时机）
+    /// 就会渲染成「这条笔记已经不在了」。
+    var initial: Note? = nil
 
     @State private var draft: Note?
     @State private var tagInput = ""
@@ -13,9 +17,14 @@ struct NoteDetailView: View {
     @State private var errorMessage: String?
     @State private var confirmDelete = false
 
+    /// 展示用的笔记：本地草稿 → store 实时值 → 调用方带进来的快照
+    private var resolved: Note? {
+        draft ?? store.note(id: noteID) ?? initial
+    }
+
     var body: some View {
         Group {
-            if let note = draft {
+            if let note = resolved {
                 content(note)
             } else {
                 Text("这条笔记已经不在了")
@@ -24,7 +33,7 @@ struct NoteDetailView: View {
             }
         }
         .onAppear {
-            if draft == nil { draft = store.note(id: noteID) }
+            if draft == nil { draft = resolved }
         }
         .navigationTitle("笔记")
         .navigationBarTitleDisplayMode(.inline)
@@ -41,7 +50,7 @@ struct NoteDetailView: View {
                     Image(uiImage: ui)
                         .resizable()
                         .scaledToFit()
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: 340)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
 
@@ -109,7 +118,7 @@ struct NoteDetailView: View {
             Button {
                 store.toggleFavorite(note)
                 Haptics.tap()
-                draft = store.note(id: noteID)
+                draft = store.note(id: noteID) ?? initial
             } label: {
                 Image(systemName: note.isFavorite ? "star.fill" : "star")
                     .foregroundStyle(note.isFavorite ? Theme.warm : Theme.inkSoft)
@@ -311,11 +320,11 @@ struct NoteDetailView: View {
     private func binding<T>(_ keyPath: WritableKeyPath<Note, T>, fallback: T) -> Binding<T> {
         Binding<T>(
             get: {
-                guard let current = draft else { return fallback }
+                guard let current = resolved else { return fallback }
                 return current[keyPath: keyPath]
             },
             set: { newValue in
-                guard var current = draft else { return }
+                guard var current = resolved else { return }
                 current[keyPath: keyPath] = newValue
                 draft = current
                 store.update(current)
@@ -335,7 +344,7 @@ struct NoteDetailView: View {
     }
 
     private func removeTag(_ tag: String) {
-        guard var current = draft else { return }
+        guard var current = resolved else { return }
         current.tags.removeAll { $0 == tag }
         draft = current
         store.update(current)
@@ -346,7 +355,7 @@ struct NoteDetailView: View {
         Task {
             do {
                 try await store.enrich(note, config: LLMKeys.config)
-                draft = store.note(id: noteID)
+                draft = store.note(id: noteID) ?? initial
             } catch {
                 errorMessage = error.localizedDescription
             }
