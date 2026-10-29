@@ -210,24 +210,31 @@ struct CaptureView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(recent.enumerated()), id: \.element.id) { index, note in
-                        NoteRow(note: note)
-                            .padding(.vertical, 10)
-                            .contentShape(Rectangle())
-                            .onTapGesture { selectedNoteID = note.id }
-                            .contextMenu {
-                                Button {
-                                    store.toggleFavorite(note)
-                                    Haptics.tap()
-                                } label: {
-                                    Label(note.isFavorite ? "取消收藏" : "收藏",
-                                          systemImage: note.isFavorite ? "star.slash" : "star")
-                                }
-                                Button(role: .destructive) {
-                                    delete(note)
-                                } label: {
-                                    Label("删除", systemImage: "trash")
-                                }
+                        // 用 Button 而不是 onTapGesture：后者没有时长上限，
+                        // 长按会被当成点击直接进详情，contextMenu 永远弹不出来。
+                        Button {
+                            selectedNoteID = note.id
+                        } label: {
+                            NoteRow(note: note)
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
+                                store.toggleFavorite(note)
+                                Haptics.tap()
+                            } label: {
+                                Label(note.isFavorite ? "取消收藏" : "收藏",
+                                      systemImage: note.isFavorite ? "star.slash" : "star")
                             }
+                            Button(role: .destructive) {
+                                delete(note)
+                            } label: {
+                                Label("删除", systemImage: "trash")
+                            }
+                        }
 
                         if index < recent.count - 1 {
                             Divider().opacity(0.4)
