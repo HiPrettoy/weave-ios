@@ -83,8 +83,35 @@ enum ForceLayout {
             temperature *= 0.985
         }
 
+        // 收尾：把整张图缩放平移到安全区内。
+        // 边距 30 只保证圆点不出界，节点标签比圆点宽得多，贴边就会被裁掉。
+        let insetX: CGFloat = 52
+        let insetY: CGFloat = 34
+        let safe = CGRect(x: insetX,
+                          y: insetY,
+                          width: max(20, size.width - insetX * 2),
+                          height: max(20, size.height - insetY * 2))
+
+        var minX = positions[0].x, maxX = positions[0].x
+        var minY = positions[0].y, maxY = positions[0].y
+        for point in positions {
+            minX = min(minX, point.x); maxX = max(maxX, point.x)
+            minY = min(minY, point.y); maxY = max(maxY, point.y)
+        }
+        let spanX = max(1, maxX - minX)
+        let spanY = max(1, maxY - minY)
+        let fitScale = min(1, min(safe.width / spanX, safe.height / spanY))
+        let cx = (minX + maxX) / 2
+        let cy = (minY + maxY) / 2
+        let targetX = safe.midX
+        let targetY = safe.midY
+
         var result: [UUID: CGPoint] = [:]
-        for (offset, id) in ids.enumerated() { result[id] = positions[offset] }
+        for (offset, id) in ids.enumerated() {
+            let point = positions[offset]
+            result[id] = CGPoint(x: targetX + (point.x - cx) * fitScale,
+                                 y: targetY + (point.y - cy) * fitScale)
+        }
         return result
     }
 }

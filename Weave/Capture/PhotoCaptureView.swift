@@ -193,7 +193,7 @@ struct PhotoCaptureView: View {
     private func save() {
         let body = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let title = body.split(separator: "\n").first.map(String.init) ?? ""
-        _ = store.add(content: body.isEmpty ? "（图片笔记）" : body,
+        _ = store.add(content: body,
                       title: String(title.prefix(30)),
                       tags: parseTags(tagText),
                       source: .photo,

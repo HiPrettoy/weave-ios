@@ -34,11 +34,15 @@ enum AutoLinker {
         var links: [NoteLink] = []
 
         for i in 0..<notes.count {
+            // 没有可索引文字的笔记（比如只存了一张图）不参与关联，
+            // 否则它会靠时间邻近和占位词硬连出一堆假关联。
+            guard !frequencies[i].isEmpty else { continue }
             let left = notes[i]
             let leftVector = vectors[left.id] ?? []
             var candidates: [(UUID, Double, LinkKind)] = []
 
             for j in 0..<notes.count where j != i {
+                guard !frequencies[j].isEmpty else { continue }
                 let right = notes[j]
                 let similarity = EmbeddingEngine.cosine(leftVector, vectors[right.id] ?? [])
                 let tagOverlap = jaccard(Set(left.tags.map { $0.lowercased() }),
@@ -47,6 +51,8 @@ enum AutoLinker {
                 let timeProximity = max(0.0, 1.0 - hoursApart / 72.0)
                 let score = 0.68 * similarity + 0.22 * tagOverlap + 0.10 * timeProximity
 
+                // 只靠"同一时段记的"连起来算不上关联，至少要有字面或标签重合
+                guard similarity >= 0.10 || tagOverlap > 0 else { continue }
                 guard score >= threshold || similarity >= 0.34 else { continue }
 
                 let kind: LinkKind

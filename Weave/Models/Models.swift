@@ -99,7 +99,13 @@ struct Note: Identifiable, Codable, Hashable {
             .first
             .map(String.init) ?? ""
         let trimmed = firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return "无标题笔记" }
+        if trimmed.isEmpty {
+            switch source {
+            case .photo: return "图片笔记"
+            case .voice: return "语音笔记"
+            default: return "无标题笔记"
+            }
+        }
         return trimmed.count > 22 ? String(trimmed.prefix(22)) + "…" : trimmed
     }
 
