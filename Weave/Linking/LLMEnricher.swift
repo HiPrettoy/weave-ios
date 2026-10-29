@@ -114,9 +114,9 @@ enum LLMEnricher {
 
     static func parseModelIDs(_ data: Data) -> [String] {
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [] }
-        var buckets: [[Any]] = []
-        if let data = object["data"] as? [[String: Any]] { buckets.append(data) }
-        if let models = object["models"] as? [[String: Any]] { buckets.append(models) }
+        var buckets: [[[String: Any]]] = []
+        if let list = object["data"] as? [[String: Any]] { buckets.append(list) }
+        if let list = object["models"] as? [[String: Any]] { buckets.append(list) }
 
         var ids: [String] = []
         for bucket in buckets {
