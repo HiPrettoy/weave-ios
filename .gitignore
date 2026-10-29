@@ -5,6 +5,10 @@ build/
 *.dSYM
 DerivedData/
 
+# 本地构建产物/真机取证（含笔记数据，不入库）
+dist/
+dist2/
+
 # XcodeGen 生成，不进仓库
 Weave.xcodeproj/
 *.xcodeproj/xcuserdata/

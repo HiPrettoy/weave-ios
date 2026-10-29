@@ -8,6 +8,18 @@
 
 ---
 
+## 截图
+
+| 采集 | 笔记详情 | 知识图谱 |
+|---|---|---|
+| <img src="docs/shots/01-home.png" width="240"> | <img src="docs/shots/02-note.png" width="240"> | <img src="docs/shots/03-graph.png" width="240"> |
+
+| 语音实时转写 | 复习 |
+|---|---|
+| <img src="docs/shots/04-voice.png" width="240"> | <img src="docs/shots/05-review.png" width="240"> |
+
+> 以上均为 iPhone（iOS 16.7.16）真机截图，非模拟器。
+
 ## 它解决什么
 
 学习时遇到的陌生概念是碎的：书上看到一句、会上听到一段、PPT 拍一张。
@@ -84,6 +96,16 @@ brew install xcodegen
 | Sideloadly / AltStore + 免费 Apple ID | Windows/Mac 都行 | 7 天，需重签 |
 | 付费开发者证书 / TestFlight | 99 美元/年 | 1 年 |
 
+走 TrollStore 的话，直接把 Release 里的 IPA 传到手机即可；也可以让手机自己下载安装
+（先在本机起一个静态服务器，把 IPA 放在同目录）：
+
+```bash
+# 手机与电脑同一局域网
+python -m http.server 8000
+# 手机 Safari 打开，通过 TrollStore 的 URL 安装
+# apple-magnifier://install?url=http%3A%2F%2F<你的局域网IP>%3A8000%2FWeave-v1.0.1.ipa
+```
+
 > 注意：`ldid` 伪签名 + `dpkg` 装进 `/var/jb/Applications` 虽然能启动，
 > 但系统会按进程拦掉外网请求（`NSURLError -1009`），语音识别和 AI 增强都会失效。
 > 走 TrollStore 安装才正常联网。
@@ -115,6 +137,21 @@ project.yml     XcodeGen 配置（工程文件不入库）
 - [`kermopajula/braindump`](https://github.com/kermopajula/braindump) — 纯端上、语音优先的隐私设计
 - [`luisangel2895/neurova`](https://github.com/luisangel2895/neurova) — SwiftUI + 端上 OCR + 间隔重复的组合
 - [`cutd/Anki-Flashcards-Pro`](https://github.com/cutd/Anki-Flashcards-Pro) — Anki 兼容的 SRS 调度实现
+
+## 真机验证记录（v1.0.1）
+
+iPhone（iOS 16.7.16，rootless 越狱）经 TrollStore Lite 安装后逐项走查：
+
+| 项目 | 结果 |
+|---|---|
+| 安装与启动 | 未签名 IPA 经 TrollStore 安装，版本校验 1.0.1 通过 |
+| 文字采集 → 自动关联 | 新增一条笔记后，关联数 8→10，自动连上 2 条既有笔记（相似度 0.41 / 0.24）|
+| 语音实时转写 | 麦克风 + `SFSpeechRecognizer` 正常，实时出字、波形动画、停止后可编辑再保存 |
+| 拍照 OCR | 相机、`Vision` 提字链路通；无文字时给提示而不是报错 |
+| 知识图谱 | 力导向布局、节点按连接数变大小、来源配色、缩放拖拽均正常 |
+| 复习 | SM-2 四档评分生效，待复习 7→6，间隔按评分推进 |
+| 分享 / 删除 | 系统分享面板正常；删除笔记会连同关联一起清理，计数同步 |
+| 持久化 | 杀进程重启后数据完整（`Documents/weave-store.json`）|
 
 ## 已知限制
 
