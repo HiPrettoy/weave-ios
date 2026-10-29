@@ -9,6 +9,7 @@ struct CaptureView: View {
     @State private var showManual = false
     @State private var toast: String?
     @State private var selectedNoteID: UUID?
+    @State private var actionNote: Note?
     @FocusState private var draftFocused: Bool
 
     private var recent: [Note] {
@@ -46,6 +47,23 @@ struct CaptureView: View {
             }
             .sheet(isPresented: $showManual) {
                 ManualCaptureView().environmentObject(store)
+            }
+            .confirmationDialog(actionTitle, isPresented: Binding(
+                get: { actionNote != nil },
+                set: { if !$0 { actionNote = nil } }
+            ), titleVisibility: .visible) {
+                if let note = actionNote {
+                    Button(note.isFavorite ? "取消收藏" : "收藏") {
+                        store.toggleFavorite(note)
+                        Haptics.tap()
+                        actionNote = nil
+                    }
+                    Button("删除这条笔记", role: .destructive) {
+                        delete(note)
+                        actionNote = nil
+                    }
+                }
+                Button("取消", role: .cancel) { actionNote = nil }
             }
             .overlay(alignment: .bottom) {
                 if let toast {
@@ -194,7 +212,7 @@ struct CaptureView: View {
                     .foregroundStyle(Theme.ink)
                 Spacer()
                 if !store.notes.isEmpty {
-                    Text("共 \(store.notes.count) 条 · 长按可删除")
+                    Text("共 \(store.notes.count) 条 · ⋯ 可收藏/删除")
                         .font(.caption2)
                         .foregroundStyle(Theme.inkSoft)
                 }
@@ -210,30 +228,28 @@ struct CaptureView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(recent.enumerated()), id: \.element.id) { index, note in
-                        // 用 Button 而不是 onTapGesture：后者没有时长上限，
-                        // 长按会被当成点击直接进详情，contextMenu 永远弹不出来。
-                        Button {
-                            selectedNoteID = note.id
-                        } label: {
-                            NoteRow(note: note)
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
+                        HStack(spacing: 6) {
+                            // 行主体是按钮：点击进详情
                             Button {
-                                store.toggleFavorite(note)
-                                Haptics.tap()
+                                selectedNoteID = note.id
                             } label: {
-                                Label(note.isFavorite ? "取消收藏" : "收藏",
-                                      systemImage: note.isFavorite ? "star.slash" : "star")
+                                NoteRow(note: note)
+                                    .padding(.vertical, 10)
+                                    .contentShape(Rectangle())
                             }
-                            Button(role: .destructive) {
-                                delete(note)
+                            .buttonStyle(.plain)
+
+                            // 右侧显式的「⋯」：收藏 / 删除，不依赖左滑或长按
+                            Button {
+                                actionNote = note
                             } label: {
-                                Label("删除", systemImage: "trash")
+                                Image(systemName: "ellipsis")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(Theme.inkSoft)
+                                    .frame(width: 32, height: 32)
+                                    .contentShape(Rectangle())
                             }
+                            .buttonStyle(.plain)
                         }
 
                         if index < recent.count - 1 {
@@ -247,6 +263,11 @@ struct CaptureView: View {
                 )
             }
         }
+    }
+
+    private var actionTitle: String {
+        guard let note = actionNote else { return "" }
+        return note.displayTitle
     }
 
     private func delete(_ note: Note) {
