@@ -44,23 +44,30 @@ struct SwipeDeleteRow<Content: View>: View {
             .opacity(open || offset < -2 ? 1 : 0)
             .allowsHitTesting(open || offset < -2)
 
-            Button {
-                if open {
-                    close()
-                } else {
-                    onTap()
+            // 这里刻意不用 Button：Button 会抢走拖动，导致左滑根本不触发。
+            // 用 onTapGesture + contentShape 代替，点按和横向拖动可以共存。
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if open {
+                        close()
+                    } else {
+                        onTap()
+                    }
                 }
-            } label: {
-                content()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .background(Theme.card)
-            .offset(x: offset)
-            // 用 simultaneousGesture 而不是 highPriorityGesture：外层还有个竖向 ScrollView，
-            // 抢手势会让首页滚不动。这里只在自己判定为横向拖动时才改 offset。
-            .simultaneousGesture(horizontalDrag)
+                .contextMenu {
+                    Button {
+                        onDelete()
+                    } label: {
+                        Label("删除这条笔记", systemImage: "trash")
+                    }
+                }
+                .background(Theme.card)
+                .offset(x: offset)
+                // 用 simultaneousGesture 而不是 highPriorityGesture：外层还有个竖向 ScrollView，
+                // 抢手势会让首页滚不动。这里只在自己判定为横向拖动时才改 offset。
+                .simultaneousGesture(horizontalDrag)
         }
         .clipped()
     }
