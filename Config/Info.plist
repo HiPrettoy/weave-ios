@@ -54,6 +54,14 @@
 	<string>织识需要语音识别权限，把录音转写为可检索的文字。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>织识需要相册权限，从已有图片中提取文字。</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>织识在连接你自己局域网里的 vLLM / Ollama 等本地模型服务时需要访问本地网络。</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- 本地模型服务通常是 http://192.168.x.x，只放开局域网，不改全局 ATS -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>
