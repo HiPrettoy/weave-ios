@@ -49,11 +49,13 @@ D:\DSH\weave-ios/
     ├── Models/Models.swift     ← Note / NoteLink / ReviewCard / Prefs
     ├── Support/
     │   ├── AppStore.swift      ← ★ 唯一数据源（内存数组 + JSON 落盘）
-    │   ├── Theme.swift         ← 配色、.card() 修饰器、Haptics、parseTags
+    │   ├── Theme.swift         ← 配色（含深色）、scaledFont()、.card()、Haptics、parseTags
+    │   ├── Formatters.swift    ← 共享的日期格式（别再每次渲染 new DateFormatter）
+    │   ├── Keychain.swift      ← API Key 的存/取（不再进 UserDefaults）
     │   ├── Exporter.swift      ← 导出 Markdown（Obsidian 双链）
     │   ├── SeedData.swift      ← 首启 6 条示例笔记
-    │   ├── ImageTool.swift     ← 图片压缩（长边 1600 / JPEG 0.72）
-    │   ├── LLMKeys.swift       ← 预设服务商 + UserDefaults 读写
+    │   ├── ImageTool.swift     ← 图片压缩（长边 1600 / JPEG 0.72，须在后台调）
+    │   ├── LLMKeys.swift       ← 预设服务商 + Keychain 读写
     │   └── NoteRow.swift       ← 列表行组件
     ├── Capture/
     │   ├── CaptureView.swift   ← 首页（快记 + 三入口 + 最近列表 + 手势）
@@ -65,8 +67,8 @@ D:\DSH\weave-ios/
     │   └── AIExtract.swift     ← 三页共用的「AI 提炼」面板
     ├── Linking/
     │   ├── TextTokenizer.swift ← 中英混排分词（单字 + 二元组）
-    │   ├── EmbeddingEngine.swift ← Hashing Trick 512 维 + IDF + 余弦
-    │   ├── AutoLinker.swift    ← ★ O(n²) 关联打分，核心算法
+    │   ├── EmbeddingEngine.swift ← Hashing Trick 512 维 + IDF + 余弦 + SemanticCorpus
+    │   ├── AutoLinker.swift    ← ★ 倒排剪枝的关联打分，核心算法
     │   └── LLMEnricher.swift   ← OpenAI 兼容接口：/models、/chat/completions
     ├── Graph/
     │   ├── ForceLayout.swift   ← Fruchterman-Reingold 力导向布局
@@ -78,8 +80,10 @@ D:\DSH\weave-ios/
     │   ├── SRS.swift           ← SM-2 简化版
     │   └── ReviewView.swift    ← 复习卡界面
     └── Settings/
-        ├── SettingsView.swift  ← 关联参数、AI 配置、导出、清库
+        ├── SettingsView.swift  ← 关联参数、AI 配置、备份恢复、导出、清库
         └── ModelPickerView.swift ← 从 /models 拉在线模型列表
+    Localizable.xcstrings       ← 中文原文 + 英文译文（133 条）
+WeaveTests/                     ← 纯逻辑单测（分词 / 边 / 检索 / SRS / 导出 / LLM 解析）
 ```
 
 ---
@@ -274,11 +278,11 @@ xcodebuild test -project Weave.xcodeproj -scheme Weave \
 
 | 限制 | 原因 |
 |---|---|
-| 语音转写单段约 1 分钟 | 系统 `SFSpeechRecognizer` 的限制 |
+| 语音转写单段约 60 秒 | 系统 `SFSpeechRecognizer` 的限制，本项目没有做自动分段 |
 | 关联是「词面」相似度，不是真语义模型 | 同义词（如「滤波」/「filter」）要靠 AI 增强补齐 |
 | 全量 JSON 写入 | 笔记量到几万条会明显变慢。**注意：这个阈值说早了** —— 真正的瓶颈见 §7 |
 | 图谱布局一次性算完 | 节点上千时会卡，目前按几十到几百个节点设计 |
-| 没有 iCloud 同步 | 换设备靠导出 Markdown |
+| 没有 iCloud 同步 | 换设备靠「备份与恢复」里的 `.weave` 文件，或导出 Markdown |
 | 目标机 iOS 16.7 | SwiftData 用不了；Core Data 要 `.xcdatamodeld`，没有 Xcode 无法校验 |
 
 ---
@@ -360,6 +364,20 @@ xcodebuild test -project Weave.xcodeproj -scheme Weave \
   语义检索的坐标系校验、SM-2 调度、Markdown 导出、LLM 的 URL 拼接与 JSON 抽取。
 - 运行：`xcodebuild test -project Weave.xcodeproj -scheme Weave -destination 'platform=iOS Simulator,name=iPhone 16'`，
   CI 的 `test` job 会自动跑。
+
+**已修：深色模式、字号与无障碍**
+- 配色拆成两套：`accent` / `warm` 是**彩色文字**用色，`accentFill` / `warmFill` 是**承载白字的实心块**用色。
+  原因：同一个绿在深色背景上当文字够亮，当底压白字就只剩 2.67:1。所有 `.fill(...)` 的调用点都已改成 `*Fill`。
+- 修掉一个真缺陷：toast 原来用 `ink.opacity(0.86)` 当底 + 白字，而 `ink` 在深色下是白色 —— 深色模式完全看不见提示。
+  现在统一用 `Theme.scrim`（`CaptureView` 与 `SettingsView` 两处）。
+- 字号：`scaledFont(_:weight:design:relativeTo:)` 包了一层 `@ScaledMetric`，22 处 `.system(size:)` 改为跟随系统字号。
+  TabBar 的 SF Symbol 图标保持固定；图谱 Canvas 里的节点文字由 `@ScaledMetric` 单独驱动（`ctx.draw(Text)` 挂不了修饰器）。
+- VoiceOver：笔记行合并成一句摘要、Tab 播报选中态、采集键补「开始语音输入」自定义动作、
+  图谱统计条播报节点/连线/缩放、评分按钮播报四档含义、语音波形对读屏隐藏。
+- 本地化：`Weave/Localizable.xcstrings`（133 条，中文原文 + 英文译文）。编译产物是 `Weave.app/en.lproj/Localizable.strings`，
+  中文走 development region 回退（键本身就是中文），所以**不需要 zh-Hans.lproj**。
+  坑：枚举属性、方法参数、`@Published` 字符串这类**`String` 参数不会自动查表**，
+  必须显式 `String(localized:)`（`CaptureSource`/`LinkKind`/`Note.fullTitle`/`SRS.grades`/`AppTab.title`/toast/语音错误提示）。
 
 ---
 
