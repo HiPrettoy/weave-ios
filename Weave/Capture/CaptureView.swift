@@ -21,36 +21,44 @@ struct CaptureView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // 上半部固定不滚动
-                VStack(alignment: .leading, spacing: 12) {
-                    header
-                    quickCapture
-                    if !draftFocused {
-                        methods
-                        swipeHint
+            // 用 GeometryReader 拿到状态栏高度，让内容顶进 safe area：
+            // 其他页的标题紧贴状态栏（导航栏区域被内容占满），
+            // 这里如果也从 safe area 下才开始排，顶部就会空出一大条
+            GeometryReader { geo in
+                VStack(spacing: 0) {
+                    // 上半部固定不滚动
+                    VStack(alignment: .leading, spacing: 12) {
+                        header
+                        quickCapture
+                        if !draftFocused {
+                            methods
+                            swipeHint
+                        }
                     }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
-                .padding(.bottom, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .layoutPriority(1)
+                    .padding(.horizontal, 20)
+                    .padding(.top, headerTopInset(in: geo))
+                    .padding(.bottom, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .layoutPriority(1)
 
-                // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕。
-                // 这里刻意不用 ScrollView：滚动手势会吞掉上滑进笔记的手势。
-                if draftFocused {
+                    // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕。
+                    // 这里刻意不用 ScrollView：滚动手势会吞掉上滑进笔记的手势。
+                    if draftFocused {
+                        Spacer(minLength: 0)
+                    } else {
+                        recentSection
+                            .padding(.horizontal, 20)
+                            .padding(.top, 4)
+                            .padding(.bottom, 28)
+                    }
+
                     Spacer(minLength: 0)
-                } else {
-                    recentSection
-                        .padding(.horizontal, 20)
-                        .padding(.top, 4)
-                        .padding(.bottom, 28)
                 }
+                // 上滑/下滑手势挂在整页（含「最近记下的」列表）：
+                // 用 simultaneousGesture，和列表自身滚动、行点击都不冲突
+                .simultaneousGesture(swipe)
             }
-            // 上滑/下滑手势挂在整页（含「最近记下的」列表）：
-            // 用 simultaneousGesture，和列表自身滚动、行点击都不冲突
-            .simultaneousGesture(swipe)
+            .ignoresSafeArea(.container, edges: .top)
             .animation(.easeInOut(duration: 0.2), value: draftFocused)
             .background(Theme.background.ignoresSafeArea())
             .navigationBarHidden(true)
@@ -120,6 +128,15 @@ struct CaptureView: View {
                 if newValue != .capture { draftFocused = false }
             }
         }
+    }
+
+    // MARK: - 沉浸式顶部
+
+    /// 顶部内边距 = 状态栏高度 - 12：标题只距状态栏文字约 12pt，
+    /// 消掉之前 safe area 下面整段空白。读不到高度时退回安全值。
+    private func headerTopInset(in geo: GeometryProxy) -> CGFloat {
+        let status = geo.safeAreaInsets.top
+        return status > 0 ? max(6, status - 12) : 34
     }
 
     // MARK: - 手势
