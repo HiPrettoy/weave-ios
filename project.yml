@@ -36,8 +36,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.weave.ios
         PRODUCT_NAME: Weave
         # 版本号的唯一真源：CI 会断言产物版本、tag 名都与这里一致（见 .github/workflows/ios.yml）。
-        MARKETING_VERSION: "1.0.19"
-        CURRENT_PROJECT_VERSION: "20"
+        MARKETING_VERSION: "1.0.20"
+        CURRENT_PROJECT_VERSION: "21"
         # 只发 iPhone；Info.plist 里为 iPad 留的横屏声明因此不会生效。
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_FILE: Config/Info.plist
