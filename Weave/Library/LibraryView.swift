@@ -222,6 +222,22 @@ struct LibraryView: View {
     private var tagBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 7) {
+                // 清除放在最前面：标签一多，横滑之后它就跑到看不见的地方去了
+                if !selectedTags.isEmpty {
+                    Button {
+                        selectedTags.removeAll()
+                        Haptics.tap()
+                    } label: {
+                        Label("清除 \(selectedTags.count)", systemImage: "xmark")
+                            .font(.caption2)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Capsule().stroke(Theme.inkSoft.opacity(0.4), lineWidth: 1))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 if selectedTags.count >= 2 {
                     Button {
                         tagMatchAll.toggle()
@@ -256,21 +272,6 @@ struct LibraryView: View {
                                 Capsule().fill(selected ? Theme.warm : Theme.card)
                             )
                             .foregroundStyle(selected ? Color.white : Theme.inkSoft)
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                if !selectedTags.isEmpty {
-                    Button {
-                        selectedTags.removeAll()
-                        Haptics.tap()
-                    } label: {
-                        Text("清除 \(selectedTags.count)")
-                            .font(.caption2)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Capsule().stroke(Theme.inkSoft.opacity(0.4), lineWidth: 1))
-                            .foregroundStyle(Theme.inkSoft)
                     }
                     .buttonStyle(.plain)
                 }

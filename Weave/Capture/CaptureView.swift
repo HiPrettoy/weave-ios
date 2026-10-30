@@ -33,6 +33,7 @@ struct CaptureView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
                 .contentShape(Rectangle())
                 .simultaneousGesture(swipe)
 
@@ -262,6 +263,10 @@ struct CaptureView: View {
                     .font(.caption2)
                     .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.leading)
+                    // 页面整体高度吃紧时 SwiftUI 会把两行说明压成一行加省略号，
+                    // 钉死纵向尺寸后它就只能去压缩下面的列表
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
