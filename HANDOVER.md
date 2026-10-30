@@ -82,7 +82,7 @@ D:\DSH\weave-ios/
     └── Settings/
         ├── SettingsView.swift  ← 关联参数、AI 配置、备份恢复、导出、清库
         └── ModelPickerView.swift ← 从 /models 拉在线模型列表
-    Localizable.xcstrings       ← 中文原文 + 英文译文（133 条）
+    Localizable.xcstrings       ← 中文原文 + 英文译文（含 %lld 插值模板）
 WeaveTests/                     ← 纯逻辑单测（分词 / 边 / 检索 / SRS / 导出 / LLM 解析）
 ```
 
@@ -374,10 +374,12 @@ xcodebuild test -project Weave.xcodeproj -scheme Weave \
   TabBar 的 SF Symbol 图标保持固定；图谱 Canvas 里的节点文字由 `@ScaledMetric` 单独驱动（`ctx.draw(Text)` 挂不了修饰器）。
 - VoiceOver：笔记行合并成一句摘要、Tab 播报选中态、采集键补「开始语音输入」自定义动作、
   图谱统计条播报节点/连线/缩放、评分按钮播报四档含义、语音波形对读屏隐藏。
-- 本地化：`Weave/Localizable.xcstrings`（133 条，中文原文 + 英文译文）。编译产物是 `Weave.app/en.lproj/Localizable.strings`，
+- 本地化：`Weave/Localizable.xcstrings`（中文原文 + 英文译文，含 `%lld` 插值模板）。编译产物是 `Weave.app/en.lproj/Localizable.strings`，
   中文走 development region 回退（键本身就是中文），所以**不需要 zh-Hans.lproj**。
-  坑：枚举属性、方法参数、`@Published` 字符串这类**`String` 参数不会自动查表**，
+  坑 1：枚举属性、方法参数、`@Published` 字符串这类**`String` 参数不会自动查表**，
   必须显式 `String(localized:)`（`CaptureSource`/`LinkKind`/`Note.fullTitle`/`SRS.grades`/`AppTab.title`/toast/语音错误提示）。
+  坑 2：`Text("\(count) 条")` 这类插值走 `LocalizedStringKey`，键是 `"%lld 条"` 这样的模板，
+  和纯字面量的键不是同一套 —— 查漏时要把插值归一成占位符再比对。
 
 ---
 

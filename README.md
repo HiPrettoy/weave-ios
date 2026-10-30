@@ -138,7 +138,7 @@ Weave/
   Library/      列表、搜索、详情
   Review/       SM-2、复习界面
   Settings/     关联参数、AI 配置、备份恢复、导出、清库
-  Localizable.xcstrings  中文原文 + 英文译文（133 条）
+  Localizable.xcstrings  中文原文 + 英文译文（含 `%lld` 插值模板）
 WeaveTests/     单元测试（分词 / 连边 / 检索 / SRS / 导出 / LLM 解析）
 Config/Info.plist
 Assets/Assets.xcassets
