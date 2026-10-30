@@ -23,7 +23,7 @@ struct CaptureView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // 上半部固定不滚动
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 12) {
                     header
                     quickCapture
                     if !draftFocused {
@@ -32,7 +32,8 @@ struct CaptureView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 14)
+                .padding(.top, 4)
+                .padding(.bottom, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
 
@@ -151,9 +152,9 @@ struct CaptureView: View {
     // MARK: - 头部
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("织识")
-                .font(.system(size: 34, weight: .bold, design: .serif))
+                .font(.system(size: 32, weight: .bold, design: .serif))
                 .foregroundStyle(Theme.ink)
             Text("把碎片记下来，让它们自己连成网")
                 .font(.subheadline)
@@ -163,10 +164,10 @@ struct CaptureView: View {
                 statPill("\(store.links.count)", "条关联")
                 statPill("\(store.notes.filter { $0.source == .voice }.count)", "语音")
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 12)
+        // 顶部只留 safe area，不再额外加内边距，消掉标题上方的空白
     }
 
     private func statPill(_ value: String, _ label: String) -> some View {
@@ -213,7 +214,7 @@ struct CaptureView: View {
                 .disabled(!canSave)
             }
         }
-        .card()
+        .card(padding: 13)
     }
 
     private func saveDraft() {
@@ -231,7 +232,7 @@ struct CaptureView: View {
     // MARK: - 三种采集方式（语音放正中间）
 
     private var methods: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             methodButton(title: "拍照", icon: "camera.viewfinder", caption: "点开即相机\nOCR 提字", tint: Theme.warm) {
                 showPhoto = true
             }
@@ -250,14 +251,14 @@ struct CaptureView: View {
                               tint: Color,
                               action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(tint)
-                    .frame(width: 38, height: 38)
+                    .frame(width: 28, height: 28)
                     .background(Circle().fill(tint.opacity(0.13)))
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(Theme.ink)
                 Text(caption)
                     .font(.caption2)
@@ -269,9 +270,9 @@ struct CaptureView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
+            .padding(11)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(Theme.card)
             )
         }
