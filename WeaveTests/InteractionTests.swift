@@ -138,13 +138,16 @@ final class DeleteUndoTests: XCTestCase {
     }
 
     /// 撤销之后关联要重新长出来（它们由 rebuildLinks 按当前阈值重算）
+    ///
+    /// 两条笔记刻意写成近乎重复：哈希 IDF 会给「只有一篇有」的词更高权重，
+    /// 两篇各说各话的笔记算出的余弦会很低，压根连不上，测不到撤销这条路径。
     func testUndoRebuildsLinks() {
         let store = makeStore()
-        guard let a = store.add(content: "双链笔记把想法连起来，形成一张网", source: .text),
-              let b = store.add(content: "双链笔记的价值在于让想法互相引用，形成网络", source: .text) else {
+        guard let a = store.add(content: "间隔重复利用遗忘曲线安排复习时间，让记忆保持得更久", source: .text),
+              let b = store.add(content: "间隔重复利用遗忘曲线安排复习时间，让记忆保持得更久一点", source: .text) else {
             return XCTFail("add 失败")
         }
-        XCTAssertFalse(store.related(to: a, limit: 8).isEmpty)
+        XCTAssertFalse(store.related(to: a, limit: 8).isEmpty, "两条近乎重复的笔记必须连上")
 
         let bundle = store.remove(a)
         XCTAssertTrue(store.related(to: b, limit: 8).isEmpty)
