@@ -3,12 +3,21 @@ name: Build unsigned IPA
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
   workflow_dispatch:
     inputs:
       version:
-        description: "版本号（写入 IPA 文件名，用于 TrollStore 安装校验）"
+        description: "可选：覆盖版本号。留空则用 project.yml 的 MARKETING_VERSION（推荐留空）"
         required: false
-        default: "1.0.0"
+        default: ""
+
+# 同一分支/同一 tag 的新推送取消旧构建，避免排队烧 macos 分钟
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -51,25 +60,60 @@ jobs:
             EXPANDED_CODE_SIGN_IDENTITY="" \
             ONLY_ACTIVE_ARCH=NO
 
+      - name: Resolve & verify version
+        id: version
+        env:
+          # 通过 env 传入而不是直接 ${{ }} 插进脚本，避免手动触发时输入被当成 shell 执行
+          VERSION_OVERRIDE: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          APP_PATH="build/Weave.xcarchive/Products/Applications/Weave.app"
+          test -d "$APP_PATH"
+          BUILT=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_PATH/Info.plist")
+
+          # 单一真源：project.yml 的 MARKETING_VERSION。
+          # 产物版本和它不一致就说明有人手改了工程或 Info.plist，直接失败。
+          DECLARED=$(awk -F'"' '/^[[:space:]]*MARKETING_VERSION:/ { print $2; exit }' project.yml)
+          if [ -z "$DECLARED" ]; then
+            echo "::error::project.yml 里找不到 MARKETING_VERSION"
+            exit 1
+          fi
+          if [ "$BUILT" != "$DECLARED" ]; then
+            echo "::error::产物版本 ($BUILT) != project.yml 的 MARKETING_VERSION ($DECLARED)"
+            exit 1
+          fi
+
+          # 手动触发时的显式覆盖仅用于补包，且同样必须一致，否则 TrollStore 会判成旧包。
+          if [ -n "${VERSION_OVERRIDE:-}" ] && [ "$VERSION_OVERRIDE" != "$BUILT" ]; then
+            echo "::error::手动输入版本 ($VERSION_OVERRIDE) != 产物版本 ($BUILT)"
+            exit 1
+          fi
+
+          # tag 推送（v1.0.20）必须与产物版本一致，否则 Release 会挂错版本号。
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME#v}"
+            if [ "$TAG" != "$BUILT" ]; then
+              echo "::error::tag ($GITHUB_REF_NAME) != 产物版本 ($BUILT)"
+              exit 1
+            fi
+          fi
+
+          echo "version=$BUILT" >> "$GITHUB_OUTPUT"
+          echo "版本校验通过：$BUILT"
+
       - name: Package Payload into IPA
         id: package
         run: |
-          set -e
+          set -euo pipefail
           APP_PATH="build/Weave.xcarchive/Products/Applications/Weave.app"
-          test -d "$APP_PATH"
-          # 版本号直接取自编译产物，避免文件名里的版本和 App 内版本对不上
-          # （TrollStore 安装脚本会按文件名校验已装版本）
-          VERSION="${{ github.event.inputs.version }}"
-          if [ -z "$VERSION" ]; then
-            VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_PATH/Info.plist")
-          fi
-          echo "version=$VERSION"
+          VERSION="${{ steps.version.outputs.version }}"
           mkdir -p build/Payload
           cp -R "$APP_PATH" build/Payload/
           # 清掉可能残留的签名，交给 TrollStore / 侧载工具重新签
           rm -rf build/Payload/Weave.app/_CodeSignature || true
           cd build
-          zip -qry "Weave-v${VERSION}.ipa" Payload
+          # -X 不写额外的扩展属性/资源叉，避免某些侧载工具解压出错
+          zip -qrX "Weave-v${VERSION}.ipa" Payload
           ls -lh "Weave-v${VERSION}.ipa"
           echo "ipa=build/Weave-v${VERSION}.ipa" >> "$GITHUB_OUTPUT"
           echo "name=Weave-v${VERSION}.ipa" >> "$GITHUB_OUTPUT"
@@ -91,3 +135,34 @@ jobs:
             build/Logs
             ~/Library/Logs/xcodebuild
           if-no-files-found: ignore
+
+  # 推 tag 即发版：git tag v1.0.20 && git push --tags
+  # 版本一致性在上面 build 的 verify 步骤里已经断言过，这里直接消费产物。
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download IPA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: weave-unsigned-ipa
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: 织识 Weave ${{ github.ref_name }}（未签名 IPA）
+          body: |
+            未签名 IPA，用 TrollStore 或自签工具安装。
+
+            - 版本：`${{ github.ref_name }}`（与 `project.yml` 的 `MARKETING_VERSION` 一致）
+            - 构建：GitHub Actions `${{ github.run_id }}`，Xcode 16.4 / iOS 18.5 SDK
+            - 安装：见仓库 `HANDOVER.md` §3.2
+          files: dist/*.ipa
+          fail_on_unmatched_files: true
+          generate_release_notes: true
