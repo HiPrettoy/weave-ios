@@ -62,7 +62,9 @@ final class SRSReviewTests: XCTestCase {
         XCTAssertEqual(SRS.humanized(0), "现在")
         XCTAssertEqual(SRS.humanized(1), "1 天后")
         XCTAssertEqual(SRS.humanized(40), "1 个月后")
-        XCTAssertTrue(SRS.humanized(0.01).contains("分钟"))
+        // 不足一小时（1/24 天）说「马上」，一小时到一天之间才按分钟算
+        XCTAssertEqual(SRS.humanized(0.01), "马上")
+        XCTAssertTrue(SRS.humanized(0.5).contains("分钟"))
     }
 }
 

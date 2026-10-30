@@ -10,7 +10,7 @@ final class LinkingTests: XCTestCase {
 
     func testTokenizerSplitsChineseIntoCharactersAndBigrams() {
         let tokens = TextTokenizer.tokens(in: "贝叶斯推断")
-        // 单字 4 个 + 相邻二元组 3 个
+        // 单字 5 个 + 相邻二元组 4 个
         XCTAssertTrue(tokens.contains("贝"))
         XCTAssertTrue(tokens.contains("贝叶"))
         XCTAssertTrue(tokens.contains("叶斯"))
@@ -57,9 +57,10 @@ final class LinkingTests: XCTestCase {
     }
 
     func testCosineOfIdenticalVectorIsOne() {
-        let vector = EmbeddingEngine.vector(for: ["卡尔曼", "滤波"],
+        let vector = EmbeddingEngine.vector(for: "卡尔曼滤波",
                                             index: CorpusIndex(documentCount: 2,
                                                                documentFrequency: [1: 1, 2: 1]))
+        XCTAssertFalse(vector.isEmpty)
         XCTAssertEqual(EmbeddingEngine.cosine(vector, vector), 1.0, accuracy: 1e-5)
     }
 

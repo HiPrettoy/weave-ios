@@ -67,7 +67,7 @@ struct AIExtractPanel: View {
     /// 提炼出的标签直接追加到各页自己的标签输入框
     var onTags: ([String]) -> Void = { _ in }
     /// 传了才显示「用作标题」，手记页可以用
-    var onUseSummaryAsTitle: ((String) -> Void)? = nil
+    var onUseSummaryAsTitle: ((String) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {

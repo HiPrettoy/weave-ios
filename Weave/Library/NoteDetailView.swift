@@ -9,7 +9,7 @@ struct NoteDetailView: View {
     /// 调用方（图谱）手里已经有这条笔记的完整值，直接带进来做兜底。
     /// 只靠 noteID 去 store 里查，一旦查询时点不对（sheet 的 onAppear 时机）
     /// 就会渲染成「这条笔记已经不在了」。
-    var initial: Note? = nil
+    var initial: Note?
 
     @State private var draft: Note?
     @State private var tagInput = ""
