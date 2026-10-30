@@ -60,8 +60,10 @@ final class SRSReviewTests: XCTestCase {
 
     func testHumanizedPhrases() {
         XCTAssertEqual(SRS.humanized(0), String(localized: "现在"))
-        XCTAssertEqual(SRS.humanized(1), String(localized: "1 天后"))
-        XCTAssertEqual(SRS.humanized(40), String(localized: "1 个月后"))
+        // 模板键是「%lld 天后」，所以断言也得写成插值形式：写死「1 天后」
+        // 查不到任何键，会原样返回中文，而 humanized 在英文环境返回 "in 1 days"。
+        XCTAssertEqual(SRS.humanized(1), String(localized: "\(1) 天后"))
+        XCTAssertEqual(SRS.humanized(40), String(localized: "\(1) 个月后"))
         // 不足一小时（1/24 天）说「马上」，一小时到一天之间才按分钟算。
         // 这里断数字不断「分钟」：换成英文是 "720 minutes later"，
         // 断中文词会让测试只在中英某一种语言下通过。
@@ -102,7 +104,10 @@ final class ExporterTests: XCTestCase {
 
     func testEmptyLibraryStillProducesHeader() {
         let markdown = Exporter.markdown(notes: [], links: [])
-        XCTAssertTrue(markdown.hasPrefix(String(localized: "# 织识导出 · ")))
+        // 标题也是模板键（「# 织识导出 · %@」），只写前半截查不到键，
+        // 英文环境下拿到的还是中文、而导出的是 "Weave export · …"，必红。
+        let header = String(localized: "# 织识导出 · \("")")
+        XCTAssertTrue(markdown.hasPrefix(header))
         XCTAssertTrue(markdown.contains(String(localized: "共 \(0) 条笔记，\(0) 条关联。")))
     }
 }
