@@ -146,7 +146,7 @@ struct CaptureView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .background(Capsule().fill(Theme.ink.opacity(0.86)))
+                        .background(Capsule().fill(Theme.scrim))
                         .padding(.bottom, 18)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -269,7 +269,7 @@ struct CaptureView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("织识")
-                .font(.system(size: 32, weight: .bold, design: .serif))
+                .scaledFont(32, weight: .bold, design: .serif, relativeTo: .largeTitle)
                 .foregroundStyle(Theme.ink)
             Text("把碎片记下来，让它们自己连成网")
                 .font(.subheadline)
@@ -322,7 +322,7 @@ struct CaptureView: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(
-                            Capsule().fill(canSave ? Theme.accent : Theme.inkSoft.opacity(0.22))
+                            Capsule().fill(canSave ? Theme.accentFill : Theme.inkSoft.opacity(0.22))
                         )
                         .foregroundStyle(.white)
                 }
@@ -341,7 +341,7 @@ struct CaptureView: View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 4) {
                 Image(systemName: "tag")
-                    .font(.system(size: 10))
+                    .scaledFont(10, relativeTo: .caption2)
                 Text("标签")
                     .font(.caption2)
                 Spacer()
@@ -381,13 +381,13 @@ struct CaptureView: View {
                 if count >= 2 && !picked {
                     // 用过两次以上算「常用」，标个次数
                     Text("\(count)")
-                        .font(.system(size: 9, weight: .semibold))
+                        .scaledFont(9, weight: .semibold, relativeTo: .caption2)
                         .opacity(0.75)
                 }
             }
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .background(Capsule().fill(picked ? Theme.accent : Theme.inkSoft.opacity(0.12)))
+            .background(Capsule().fill(picked ? Theme.accentFill : Theme.inkSoft.opacity(0.12)))
             .foregroundStyle(picked ? Color.white : Theme.ink)
             .contentShape(Capsule())
         }
@@ -418,24 +418,36 @@ struct CaptureView: View {
             draft = text
             draftTags = tags
             Haptics.warning()
-            showToast("这条没存下，内容已经放回输入框")
+            showToast(String(localized: "这条没存下，内容已经放回输入框"))
             return
         }
         Haptics.success()
-        showToast(tags.isEmpty ? "已记下，正在建立关联" : "已记下（\(tags.count) 个标签），正在建立关联")
+        // toast 是 Text(String) 而不是字面量，不走 LocalizedStringKey 查表，得显式取词
+        showToast(tags.isEmpty
+                  ? String(localized: "已记下，正在建立关联")
+                  : String(localized: "已记下（\(tags.count) 个标签），正在建立关联"))
     }
 
     // MARK: - 三种采集方式（语音放正中间）
 
     private var methods: some View {
         HStack(spacing: 10) {
-            methodButton(title: "拍照", icon: "camera.viewfinder", caption: "点开即相机\nOCR 提字", tint: Theme.warm) {
+            methodButton(title: String(localized: "拍照"),
+                         icon: "camera.viewfinder",
+                         caption: String(localized: "点开即相机\nOCR 提字"),
+                         tint: Theme.warm) {
                 activeSheet = .photo
             }
-            methodButton(title: "语音", icon: "waveform", caption: "说出来\n自动转文字", tint: Theme.accent) {
+            methodButton(title: String(localized: "语音"),
+                         icon: "waveform",
+                         caption: String(localized: "说出来\n自动转文字"),
+                         tint: Theme.accent) {
                 activeSheet = .voice
             }
-            methodButton(title: "手记", icon: "square.and.pencil", caption: "写长一点\n再打标签", tint: Color(uiColor: .systemIndigo)) {
+            methodButton(title: String(localized: "手记"),
+                         icon: "square.and.pencil",
+                         caption: String(localized: "写长一点\n再打标签"),
+                         tint: Color(uiColor: .systemIndigo)) {
                 activeSheet = .manual
             }
         }
@@ -449,7 +461,7 @@ struct CaptureView: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 15, weight: .semibold))
+                    .scaledFont(15, weight: .semibold, relativeTo: .subheadline)
                     .foregroundStyle(tint)
                     .frame(width: 28, height: 28)
                     .background(Circle().fill(tint.opacity(0.13)))
@@ -531,16 +543,18 @@ struct CaptureView: View {
                                 actionNote = note
                             } label: {
                                 Image(systemName: "ellipsis")
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .scaledFont(15, weight: .semibold, relativeTo: .subheadline)
                                     .foregroundStyle(Theme.inkSoft)
                                     .frame(width: 32, height: 32)
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                        }
+                            .accessibilityLabel("更多操作")
+                            .accessibilityHint("收藏或删除这条笔记")
 
-                        if index < recent.count - 1 {
-                            Divider().opacity(0.4)
+                            if index < recent.count - 1 {
+                                Divider().opacity(0.4)
+                            }
                         }
                     }
                 }
@@ -559,7 +573,7 @@ struct CaptureView: View {
 
     private func delete(_ note: Note) {
         store.delete(note)
-        showToast("已删除这条笔记")
+        showToast(String(localized: "已删除这条笔记"))
     }
 
     private func showToast(_ message: String) {

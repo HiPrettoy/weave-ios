@@ -122,14 +122,15 @@ python -m http.server 8000
 Weave/
   App/          WeaveApp、RootView（五个 Tab）
   Models/       Note / NoteLink / ReviewCard（纯 Codable 值类型）
-  Support/      AppStore（唯一数据源）、Theme、Exporter、SeedData、ImageTool、
-                Keychain（API Key）、Formatters（共享日期格式）
+  Support/      AppStore（唯一数据源）、Theme（含深色/字号适配）、Exporter、SeedData、
+                ImageTool、Keychain（API Key）、Formatters（共享日期格式）
   Capture/      文字 / 语音（Speech）/ 拍照（Vision OCR）
   Linking/      分词、向量化、自动关联、LLM 增强
   Graph/        力导向布局 + Canvas 绘制
   Library/      列表、搜索、详情
   Review/       SM-2、复习界面
   Settings/     关联参数、AI 配置、备份恢复、导出、清库
+  Localizable.xcstrings  中文原文 + 英文译文（133 条）
 WeaveTests/     单元测试（分词 / 连边 / 检索 / SRS / 导出 / LLM 解析）
 Config/Info.plist
 Assets/Assets.xcassets

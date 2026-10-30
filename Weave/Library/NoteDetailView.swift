@@ -142,6 +142,7 @@ struct NoteDetailView: View {
                 Image(systemName: note.isFavorite ? "star.fill" : "star")
                     .foregroundStyle(note.isFavorite ? Theme.warm : Theme.inkSoft)
             }
+            .accessibilityLabel(note.isFavorite ? "取消收藏" : "收藏")
         }
         .font(.caption)
         .foregroundStyle(Theme.inkSoft)
@@ -166,9 +167,10 @@ struct NoteDetailView: View {
                                 removeTag(tag)
                             } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 8, weight: .bold))
+                                    .scaledFont(8, weight: .bold, relativeTo: .caption2)
                                     .foregroundStyle(Theme.inkSoft)
                             }
+                            .accessibilityLabel("删除标签 \(tag)")
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -239,7 +241,7 @@ struct NoteDetailView: View {
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: item.2.symbol)
-                                .font(.system(size: 10, weight: .semibold))
+                                .scaledFont(10, weight: .semibold, relativeTo: .caption2)
                                 .foregroundStyle(Theme.accent)
                                 .frame(width: 24, height: 24)
                                 .background(Circle().fill(Theme.accentSoft))
@@ -259,6 +261,8 @@ struct NoteDetailView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(item.2.label)，\(item.0.displayTitle)，相似度 \(String(format: "%.2f", item.1))")
 
                     if index < related.count - 1 {
                         Divider().opacity(0.35)

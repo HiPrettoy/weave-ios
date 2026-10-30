@@ -79,7 +79,7 @@ struct PhotoCaptureView: View {
                                 showFullImage = false
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 28))
+                                    .scaledFont(28, relativeTo: .title2)
                                     .foregroundStyle(.white.opacity(0.85))
                                     .padding(16)
                             }
@@ -119,7 +119,7 @@ struct PhotoCaptureView: View {
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "doc.text.viewfinder")
-                        .font(.system(size: 34, weight: .light))
+                        .scaledFont(34, weight: .light, relativeTo: .largeTitle)
                         .foregroundStyle(Theme.inkSoft.opacity(0.7))
                     Text("拍书页、板书、PPT，自动把字抠出来")
                         .font(.footnote)
@@ -161,7 +161,7 @@ struct PhotoCaptureView: View {
                     .font(.subheadline.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.accent))
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.accentFill))
                     .foregroundStyle(.white)
             }
 

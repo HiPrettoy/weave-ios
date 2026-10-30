@@ -85,7 +85,7 @@ final class SpeechService: ObservableObject, @unchecked Sendable {
                 // 必须主动停下并告诉用户，否则看起来就是「说了半天没反应」。
                 if self.isRecording {
                     self.stop(autoStopped: true)
-                    self.errorMessage = "被来电或其他 App 打断了，已经把识别到的内容保留下来"
+                    self.errorMessage = String(localized: "被来电或其他 App 打断了，已经把识别到的内容保留下来")
                 }
             case .ended:
                 // 不自动续录：用户得自己决定还说不说，避免出现一段意外的空白录音
@@ -106,7 +106,7 @@ final class SpeechService: ObservableObject, @unchecked Sendable {
             // 这里干脆停下来让用户重按一次。
             if reason == .oldDeviceUnavailable {
                 self.stop(autoStopped: true)
-                self.errorMessage = "音频设备变了，录音已停止，内容保留在上方"
+                self.errorMessage = String(localized: "音频设备变了，录音已停止，内容保留在上方")
             }
         }
     }
@@ -136,7 +136,7 @@ final class SpeechService: ObservableObject, @unchecked Sendable {
         DispatchQueue.main.async {
             self.permissionDenied = !granted
             if !granted {
-                self.errorMessage = "需要在系统设置里允许「语音识别」和「麦克风」"
+                self.errorMessage = String(localized: "需要在系统设置里允许「语音识别」和「麦克风」")
             }
         }
         return granted
@@ -154,7 +154,7 @@ final class SpeechService: ObservableObject, @unchecked Sendable {
         self.recognizer = recognizer
         guard let recognizer, recognizer.isAvailable else {
             DispatchQueue.main.async {
-                self.errorMessage = "语音识别暂不可用，请检查网络，或在系统设置里开启听写"
+                self.errorMessage = String(localized: "语音识别暂不可用，请检查网络，或在系统设置里开启听写")
             }
             return
         }

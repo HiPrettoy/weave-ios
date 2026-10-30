@@ -1,0 +1,1336 @@
+{
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "#学习 #会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#learning #meeting"
+          }
+        }
+      }
+    },
+    "#学习 #算法（空格或逗号分隔）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#learning #algorithms (space or comma separated)"
+          }
+        }
+      }
+    },
+    "#课堂 #读书": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#lecture #reading"
+          }
+        }
+      }
+    },
+    "AI 增强（可选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI enrichment (optional)"
+          }
+        }
+      }
+    },
+    "AI 提炼的概念": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concepts extracted by AI"
+          }
+        }
+      }
+    },
+    "· 已编辑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· edited"
+          }
+        }
+      }
+    },
+    "上次启动提示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last launch notice"
+          }
+        }
+      }
+    },
+    "上滑看全部笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe up to see all notes"
+          }
+        }
+      }
+    },
+    "下滑直接拍照": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe down to open the camera"
+          }
+        }
+      }
+    },
+    "与它相关的关联也会一起移除，且无法恢复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Its links will be removed too. This cannot be undone."
+          }
+        }
+      }
+    },
+    "今天清空了": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All clear for today"
+          }
+        }
+      }
+    },
+    "从备份文件恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore from a backup file"
+          }
+        }
+      }
+    },
+    "从相册选": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose from Photos"
+          }
+        }
+      }
+    },
+    "使用这个模型名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use this model name"
+          }
+        }
+      }
+    },
+    "保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "保存 / 分享备份文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save or share the backup file"
+          }
+        }
+      }
+    },
+    "保存后会自动找关联": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Links are found automatically after saving"
+          }
+        }
+      }
+    },
+    "先在心里复述一遍，再点「看答案」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recall it in your head first, then tap Show answer"
+          }
+        }
+      }
+    },
+    "全部删除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete everything"
+          }
+        }
+      }
+    },
+    "共同标签": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared tags"
+          }
+        }
+      }
+    },
+    "关于": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "关联": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Links"
+          }
+        }
+      }
+    },
+    "关联引擎（本地算法，无需联网）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link engine (on-device, no network needed)"
+          }
+        }
+      }
+    },
+    "关联阈值": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link threshold"
+          }
+        }
+      }
+    },
+    "关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "写长一点\n再打标签": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write longer\nthen add tags"
+          }
+        }
+      }
+    },
+    "分享为纯文本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share as plain text"
+          }
+        }
+      }
+    },
+    "分享导出的 Markdown 文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share the exported Markdown file"
+          }
+        }
+      }
+    },
+    "列表里没有？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not in the list?"
+          }
+        }
+      }
+    },
+    "删除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "删除这条笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this note"
+          }
+        }
+      }
+    },
+    "加标签（回车确认）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a tag (press return)"
+          }
+        }
+      }
+    },
+    "危险操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zone"
+          }
+        }
+      }
+    },
+    "去「采集」里记几条，图谱会自动长出来": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture a few notes and the graph grows itself"
+          }
+        }
+      }
+    },
+    "取消": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "可以一起想起来": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can recall these together"
+          }
+        }
+      }
+    },
+    "可以检查接口地址与 API Key，或者直接手填模型名。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the endpoint and API key, or type a model name instead."
+          }
+        }
+      }
+    },
+    "同一时段": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Same period"
+          }
+        }
+      }
+    },
+    "启用云端增强": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable cloud enrichment"
+          }
+        }
+      }
+    },
+    "图片笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo note"
+          }
+        }
+      }
+    },
+    "图谱": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Graph"
+          }
+        }
+      }
+    },
+    "在线模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Online models"
+          }
+        }
+      }
+    },
+    "填地址和 Key 后，点「在线模型」会自动从该地址的 /models 接口取回可用模型列表，你挑一个即可，不用记模型名。配好后先点「测试连接」，通了再回去用。不启用则一切在端上完成，笔记不出手机。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After filling in the endpoint and key, tap Online models to fetch the available list from that address's /models endpoint. Pick one, no need to remember model names. Test the connection first. When disabled, everything runs on device and notes never leave the phone."
+          }
+        }
+      }
+    },
+    "备份与恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup & restore"
+          }
+        }
+      }
+    },
+    "备份是完整数据（笔记、关联、复习进度），换机或重装后导入即可回到原样。Markdown 导出只保留正文。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A backup is the complete data (notes, links, review progress); import it after switching phones or reinstalling to get back to exactly where you were. Markdown export keeps the body text only."
+          }
+        }
+      }
+    },
+    "复习": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review"
+          }
+        }
+      }
+    },
+    "复习卡": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review cards"
+          }
+        }
+      }
+    },
+    "复习安排": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review schedule"
+          }
+        }
+      }
+    },
+    "太简单": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too easy"
+          }
+        }
+      }
+    },
+    "好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "如果数据看起来不对，先别继续编辑 —— 用下面的「从备份文件恢复」把车倒回去。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If the data looks wrong, stop editing and use Restore from a backup file below to roll back."
+          }
+        }
+      }
+    },
+    "导出": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export"
+          }
+        }
+      }
+    },
+    "导出包含正文、标签、摘要与关联，格式兼容 Obsidian 的双链。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The export includes body text, tags, summaries and links, compatible with Obsidian wikilinks."
+          }
+        }
+      }
+    },
+    "已删除这条笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note deleted"
+          }
+        }
+      }
+    },
+    "已记下（%lld 个标签），正在建立关联": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved with %lld tags, building links"
+          }
+        }
+      }
+    },
+    "已记下，正在建立关联": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved, building links"
+          }
+        }
+      }
+    },
+    "常用服务商地址": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common provider endpoints"
+          }
+        }
+      }
+    },
+    "当前的笔记、关联、复习进度都会被备份里的内容替换。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The backup will replace the current notes, links and review progress."
+          }
+        }
+      }
+    },
+    "忘了": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forgot"
+          }
+        }
+      }
+    },
+    "恢复示例数据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore sample data"
+          }
+        }
+      }
+    },
+    "恢复（会覆盖现有笔记）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore (overwrites existing notes)"
+          }
+        }
+      }
+    },
+    "手动输入模型名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a model name"
+          }
+        }
+      }
+    },
+    "手记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write"
+          }
+        }
+      }
+    },
+    "把碎片记下来，让它们自己连成网": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture fragments; they connect themselves"
+          }
+        }
+      }
+    },
+    "拍书页、板书、PPT，自动把字抠出来": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shoot a page, whiteboard or slide and extract the text"
+          }
+        }
+      }
+    },
+    "拍照": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo"
+          }
+        }
+      }
+    },
+    "拍照记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo capture"
+          }
+        }
+      }
+    },
+    "接口地址": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endpoint URL"
+          }
+        }
+      }
+    },
+    "收起": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss"
+          }
+        }
+      }
+    },
+    "数据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data"
+          }
+        }
+      }
+    },
+    "文字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text"
+          }
+        }
+      }
+    },
+    "无标题笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untitled note"
+          }
+        }
+      }
+    },
+    "暂时没有找到相关笔记。再多记几条，关联会自己长出来。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No related notes yet. Capture a few more and links will emerge."
+          }
+        }
+      }
+    },
+    "更多操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More actions"
+          }
+        }
+      }
+    },
+    "最低系统": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minimum iOS"
+          }
+        }
+      }
+    },
+    "最近记下的": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently captured"
+          }
+        }
+      }
+    },
+    "标签": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags"
+          }
+        }
+      }
+    },
+    "标签（可选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags (optional)"
+          }
+        }
+      }
+    },
+    "标题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        }
+      }
+    },
+    "标题 / 正文 / 标签 / 概念": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title / body / tags / concepts"
+          }
+        }
+      }
+    },
+    "标题（可留空）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title (optional)"
+          }
+        }
+      }
+    },
+    "概括": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Summarize"
+          }
+        }
+      }
+    },
+    "模糊": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vague"
+          }
+        }
+      }
+    },
+    "正在听…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listening…"
+          }
+        }
+      }
+    },
+    "正在识别文字…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognizing text…"
+          }
+        }
+      }
+    },
+    "没能取到模型列表": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't fetch the model list"
+          }
+        }
+      }
+    },
+    "测试连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test connection"
+          }
+        }
+      }
+    },
+    "添加": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
+    "清空": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "清空所有数据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase all data"
+          }
+        }
+      }
+    },
+    "清空搜索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear search"
+          }
+        }
+      }
+    },
+    "点开即相机\nOCR 提字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera opens\nOCR extracts text"
+          }
+        }
+      }
+    },
+    "点选快速填入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to fill in"
+          }
+        }
+      }
+    },
+    "版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version"
+          }
+        }
+      }
+    },
+    "现在想到什么？一句话也行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's on your mind? A single line is fine"
+          }
+        }
+      }
+    },
+    "生成 Markdown 导出": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate Markdown export"
+          }
+        }
+      }
+    },
+    "生成完整备份（.weave）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a full backup (.weave)"
+          }
+        }
+      }
+    },
+    "用作标题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use as title"
+          }
+        }
+      }
+    },
+    "相似度 = 0.68×语义向量 + 0.22×标签重合 + 0.10×时间邻近。阈值越低，连得越多。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Score = 0.68 × semantic vector + 0.22 × tag overlap + 0.10 × time proximity. A lower threshold links more notes."
+          }
+        }
+      }
+    },
+    "看答案": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show answer"
+          }
+        }
+      }
+    },
+    "知识图谱": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knowledge graph"
+          }
+        }
+      }
+    },
+    "笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        }
+      }
+    },
+    "笔记、关联、复习进度都会删除，无法恢复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes, links and review progress will all be deleted. This cannot be undone."
+          }
+        }
+      }
+    },
+    "粘贴你的 Key": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste your key"
+          }
+        }
+      }
+    },
+    "织识": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weave"
+          }
+        }
+      }
+    },
+    "织识 · 用文字、语音、拍照快速记下陌生知识，并让它们自动产生关联。数据全部存在本机 Documents/weave-store.json。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weave · Capture unfamiliar knowledge quickly with text, voice or photos, and let it link itself. All data lives on device in Documents/weave-store.json."
+          }
+        }
+      }
+    },
+    "自动关联": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto links"
+          }
+        }
+      }
+    },
+    "被来电或其他 App 打断了，已经把识别到的内容保留下来": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interrupted by a call or another app. What was recognized is kept."
+          }
+        }
+      }
+    },
+    "记下来": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture"
+          }
+        }
+      }
+    },
+    "记得": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it"
+          }
+        }
+      }
+    },
+    "设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "识别到的文字（可修改）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognized text (editable)"
+          }
+        }
+      }
+    },
+    "语义排序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semantic ranking"
+          }
+        }
+      }
+    },
+    "语义相关度排序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sorted by semantic relevance"
+          }
+        }
+      }
+    },
+    "语义相近": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Similar meaning"
+          }
+        }
+      }
+    },
+    "语音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice"
+          }
+        }
+      }
+    },
+    "语音笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice note"
+          }
+        }
+      }
+    },
+    "语音记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice capture"
+          }
+        }
+      }
+    },
+    "语音识别暂不可用，请检查网络，或在系统设置里开启听写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech recognition is unavailable. Check your network, or enable Dictation in Settings."
+          }
+        }
+      }
+    },
+    "说出来\n自动转文字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speak it\ntranscribed live"
+          }
+        }
+      }
+    },
+    "转写结果（可编辑）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript (editable)"
+          }
+        }
+      }
+    },
+    "还没有用过的标签，记下的笔记会自动带标签": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No tags used yet. Notes are tagged automatically when you capture them."
+          }
+        }
+      }
+    },
+    "还没有笔记。上面随便写一句，或者按一下语音。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No notes yet. Write a line above, or tap the mic."
+          }
+        }
+      }
+    },
+    "还没有节点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No nodes yet"
+          }
+        }
+      }
+    },
+    "这条没存下，内容已经放回输入框": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save. The text is back in the box."
+          }
+        }
+      }
+    },
+    "这条笔记已经不在了": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This note no longer exists"
+          }
+        }
+      }
+    },
+    "选择备份文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a backup file"
+          }
+        }
+      }
+    },
+    "选择模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a model"
+          }
+        }
+      }
+    },
+    "采集": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture"
+          }
+        }
+      }
+    },
+    "重新布局": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Re-layout"
+          }
+        }
+      }
+    },
+    "重新获取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        }
+      }
+    },
+    "需要在系统设置里允许「语音识别」和「麦克风」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Speech Recognition and Microphone in Settings."
+          }
+        }
+      }
+    },
+    "音频设备变了，录音已停止，内容保留在上方": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The audio route changed, so recording stopped. Content is kept above."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

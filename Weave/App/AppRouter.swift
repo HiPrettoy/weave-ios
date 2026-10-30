@@ -10,13 +10,15 @@ enum AppTab: Int, CaseIterable, Identifiable {
 
     var id: Int { rawValue }
 
+    /// 用 String(localized:) 而不是裸字面量：标签栏这里是 `Text(tab.title)`，
+    /// 参数是 String，不走 LocalizedStringKey 的自动查表。
     var title: String {
         switch self {
-        case .library: return "笔记"
-        case .graph: return "图谱"
-        case .capture: return "采集"
-        case .review: return "复习"
-        case .settings: return "设置"
+        case .library: return String(localized: "笔记")
+        case .graph: return String(localized: "图谱")
+        case .capture: return String(localized: "采集")
+        case .review: return String(localized: "复习")
+        case .settings: return String(localized: "设置")
         }
     }
 

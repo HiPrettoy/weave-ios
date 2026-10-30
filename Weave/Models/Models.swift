@@ -12,10 +12,10 @@ enum CaptureSource: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .text: return "文字"
-        case .voice: return "语音"
-        case .photo: return "拍照"
-        case .manual: return "手记"
+        case .text: return String(localized: "文字")
+        case .voice: return String(localized: "语音")
+        case .photo: return String(localized: "拍照")
+        case .manual: return String(localized: "手记")
         }
     }
 
@@ -38,9 +38,9 @@ enum LinkKind: String, Codable {
 
     var label: String {
         switch self {
-        case .semantic: return "语义相近"
-        case .tag: return "共同标签"
-        case .temporal: return "同一时段"
+        case .semantic: return String(localized: "语义相近")
+        case .tag: return String(localized: "共同标签")
+        case .temporal: return String(localized: "同一时段")
         }
     }
 
@@ -103,9 +103,9 @@ struct Note: Identifiable, Codable, Hashable {
         let trimmed = firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             switch source {
-            case .photo: return "图片笔记"
-            case .voice: return "语音笔记"
-            default: return "无标题笔记"
+            case .photo: return String(localized: "图片笔记")
+            case .voice: return String(localized: "语音笔记")
+            default: return String(localized: "无标题笔记")
             }
         }
         return trimmed

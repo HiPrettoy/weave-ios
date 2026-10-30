@@ -387,7 +387,7 @@ struct SettingsView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .background(Capsule().fill(Theme.ink.opacity(0.86)))
+                        .background(Capsule().fill(Theme.scrim))
                         .padding(.bottom, 20)
                 }
             }

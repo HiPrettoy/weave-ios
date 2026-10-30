@@ -11,6 +11,8 @@ struct GraphView: View {
     @State private var labels: [UUID: String] = [:]
     @State private var canvasSize: CGSize = .zero
     @State private var scale: CGFloat = 1
+    /// Canvas 里画的是 Text 值，不能挂视图修饰器，只能用 @ScaledMetric 拿缩放后的字号
+    @ScaledMetric(relativeTo: .caption2) private var nodeLabelSize: CGFloat = 9
     @State private var baseScale: CGFloat = 1
     @State private var offset: CGSize = .zero
     @State private var baseOffset: CGSize = .zero
@@ -93,6 +95,8 @@ struct GraphView: View {
                         Image(systemName: "arrow.counterclockwise")
                     }
                     .disabled(isLayouting)
+                    .accessibilityLabel("重新布局")
+                    .accessibilityHint("按当前数据重算节点位置并复位缩放")
                 }
             }
             .sheet(item: $selectedNote) { note in
@@ -155,7 +159,7 @@ struct GraphView: View {
                     let label = labels[note.id] ?? note.displayTitle
                     ctx.draw(
                         Text(label)
-                            .font(.system(size: 9, weight: .medium))
+                            .font(.system(size: nodeLabelSize, weight: .medium))
                             .foregroundColor(Theme.inkSoft),
                         at: CGPoint(x: centerPoint.x, y: centerPoint.y + radius + 8)
                     )
@@ -195,6 +199,9 @@ struct GraphView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Theme.card.opacity(0.92))
         )
+        // Canvas 里的节点和连线对 VoiceOver 不可见，这里替它报一次总数
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(store.notes.count) 个节点，\(store.links.count) 条连线，平均每条关联 \(String(format: "%.1f", averageDegree)) 个，当前缩放 \(String(format: "%.1f", scale)) 倍")
     }
 
     private func statItem(_ value: String, _ label: String) -> some View {
@@ -234,12 +241,14 @@ struct GraphView: View {
                 .font(.caption2)
                 .foregroundStyle(Theme.inkSoft)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(text)来源")
     }
 
     private var emptyState: some View {
         VStack(spacing: 10) {
             Image(systemName: "circle.hexagongrid")
-                .font(.system(size: 40, weight: .light))
+                .scaledFont(40, weight: .light, relativeTo: .largeTitle)
                 .foregroundStyle(Theme.inkSoft.opacity(0.5))
             Text("还没有节点")
                 .font(.subheadline.weight(.medium))

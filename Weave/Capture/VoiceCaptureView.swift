@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct VoiceCaptureView: View {
     @EnvironmentObject private var store: AppStore
@@ -27,6 +28,8 @@ struct VoiceCaptureView: View {
                             .foregroundStyle(Color.red.opacity(0.85))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 12)
+                            // 错误是异步出现的，VoiceOver 焦点可能不在附近，播报一次
+                            .onAppear { UIAccessibility.post(notification: .announcement, argument: error) }
                     }
 
                     transcriptBox
@@ -90,6 +93,8 @@ struct VoiceCaptureView: View {
             }
         }
         .frame(height: 56)
+        // 28 根柱子对 VoiceOver 是 28 个无意义元素
+        .accessibilityHidden(true)
     }
 
     private var recordButton: some View {
@@ -109,14 +114,16 @@ struct VoiceCaptureView: View {
                     .fill(speech.isRecording ? Color.red.opacity(0.14) : Theme.accentSoft)
                     .frame(width: 96, height: 96)
                 Circle()
-                    .fill(speech.isRecording ? Color.red : Theme.accent)
+                    .fill(speech.isRecording ? Color.red : Theme.accentFill)
                     .frame(width: 68, height: 68)
                 Image(systemName: speech.isRecording ? "stop.fill" : "mic.fill")
-                    .font(.system(size: 24, weight: .semibold))
+                    .scaledFont(24, weight: .semibold, relativeTo: .title2)
                     .foregroundStyle(.white)
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(speech.isRecording ? "停止录音" : "开始录音")
+        .accessibilityHint("识别结果会实时出现在下方，可以直接编辑")
     }
 
     private var transcriptBox: some View {

@@ -113,7 +113,7 @@ private struct TabBar: View {
                     .font(.system(size: 18, weight: selected ? .semibold : .regular))
                     .frame(width: 46, height: 26)
                 Text(tab.title)
-                    .font(.system(size: 10, weight: selected ? .semibold : .regular))
+                    .scaledFont(10, weight: selected ? .semibold : .regular, relativeTo: .caption2)
             }
             .foregroundStyle(selected ? Theme.accent : Theme.inkSoft)
             .frame(maxWidth: .infinity)
@@ -121,6 +121,8 @@ private struct TabBar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(selected ? "\(tab.title)，已选中" : tab.title)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
     /// 中间的采集：实心圆略重一档，但选中/未选中颜色要拉开，
@@ -138,7 +140,7 @@ private struct TabBar: View {
             VStack(spacing: 3) {
                 ZStack {
                     Circle()
-                        .fill(selected ? Theme.accent : Theme.inkSoft.opacity(0.14))
+                        .fill(selected ? Theme.accentFill : Theme.inkSoft.opacity(0.14))
                         .frame(width: 38, height: 38)
                     Image(systemName: "square.and.pencil")
                         .font(.system(size: 15, weight: .semibold))
@@ -146,7 +148,7 @@ private struct TabBar: View {
                 }
                 .frame(width: 46, height: 30)
                 Text("采集")
-                    .font(.system(size: 10, weight: .semibold))
+                    .scaledFont(10, weight: .semibold, relativeTo: .caption2)
                     .foregroundStyle(selected ? Theme.accent : Theme.inkSoft)
             }
             .frame(maxWidth: .infinity)
@@ -161,5 +163,12 @@ private struct TabBar: View {
                     router.openVoice()
                 }
         )
+        // 长按开语音是纯手势，VoiceOver 用户摸不到，用自定义动作补上
+        .accessibilityLabel(selected ? "采集，已选中" : "采集")
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+        .accessibilityHint("点按进入采集页")
+        .accessibilityAction(named: "开始语音输入") {
+            router.openVoice()
+        }
     }
 }

@@ -92,6 +92,7 @@ struct LibraryView: View {
                             .foregroundStyle(Theme.inkSoft)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("清空搜索")
                 }
             }
             .padding(.horizontal, 10)
@@ -105,12 +106,15 @@ struct LibraryView: View {
                     Haptics.tap()
                 } label: {
                     Image(systemName: semanticMode ? "sparkles" : "sparkle")
-                        .font(.system(size: 15, weight: .semibold))
+                        .scaledFont(15, weight: .semibold, relativeTo: .subheadline)
                         .foregroundStyle(semanticMode ? Color.white : Theme.accent)
                         .frame(width: 34, height: 34)
-                        .background(Circle().fill(semanticMode ? Theme.accent : Theme.accentSoft))
+                        .background(Circle().fill(semanticMode ? Theme.accentFill : Theme.accentSoft))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("语义排序")
+                .accessibilityValue(semanticMode ? "已开启" : "已关闭")
+                .accessibilityHint("打开后按文本含义而不是字面匹配排序")
             }
 
             if searchFocused || !query.isEmpty {
@@ -147,6 +151,7 @@ struct LibraryView: View {
                                 Text(String(format: "%.2f", hit.1))
                                     .font(.caption2.monospacedDigit())
                                     .foregroundStyle(Theme.accent)
+                                    .accessibilityLabel("相关度 \(String(format: "%.2f", hit.1))")
                             }
                         }
                     }
@@ -227,7 +232,7 @@ struct LibraryView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(
-                                Capsule().fill(filter == item ? Theme.accent : Theme.card)
+                                Capsule().fill(filter == item ? Theme.accentFill : Theme.card)
                             )
                             .foregroundStyle(filter == item ? Color.white : Theme.ink)
                     }
@@ -291,7 +296,7 @@ struct LibraryView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(
-                                Capsule().fill(selected ? Theme.warm : Theme.card)
+                                Capsule().fill(selected ? Theme.warmFill : Theme.card)
                             )
                             .foregroundStyle(selected ? Color.white : Theme.inkSoft)
                     }

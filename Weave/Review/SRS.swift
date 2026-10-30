@@ -2,7 +2,12 @@ import Foundation
 
 /// 轻量 SM-2：四档评分，够用且好解释。
 enum SRS {
-    static let grades = ["忘了", "模糊", "记得", "太简单"]
+    static let grades = [
+        String(localized: "忘了"),
+        String(localized: "模糊"),
+        String(localized: "记得"),
+        String(localized: "太简单"),
+    ]
     static let gradeSymbols = ["arrow.counterclockwise", "cloud", "checkmark", "bolt"]
 
     static func apply(grade: Int, to card: ReviewCard) -> ReviewCard {

@@ -243,8 +243,12 @@ final class ModelIdentityTests: XCTestCase {
     func testDisplayTitleFallsBackToContentThenSource() {
         XCTAssertEqual(Note(title: "有标题", content: "正文").displayTitle, "有标题")
         XCTAssertEqual(Note(title: "", content: "第一行\n第二行").displayTitle, "第一行")
-        XCTAssertEqual(Note(title: "", content: "", source: .photo).displayTitle, "图片笔记")
-        XCTAssertEqual(Note(title: "", content: "", source: .voice).displayTitle, "语音笔记")
+        // 回退文案已经进了 Localizable.xcstrings，英文环境下是 "Photo note"，
+        // 所以断言也走同一张表，不然这条测试会随模拟器语言红掉。
+        XCTAssertEqual(Note(title: "", content: "", source: .photo).displayTitle,
+                       String(localized: "图片笔记"))
+        XCTAssertEqual(Note(title: "", content: "", source: .voice).displayTitle,
+                       String(localized: "语音笔记"))
     }
 
     func testFullTitleKeepsLongTitleIntact() {

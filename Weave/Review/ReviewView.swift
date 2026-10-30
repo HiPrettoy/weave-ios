@@ -49,6 +49,7 @@ struct ReviewView: View {
                     Text("先在心里复述一遍，再点「看答案」")
                         .font(.footnote)
                         .foregroundStyle(Theme.inkSoft)
+                        .accessibilityHidden(true)
 
                     if revealed {
                         Divider().opacity(0.4)
@@ -106,7 +107,7 @@ struct ReviewView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.accent))
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.accentFill))
                         .foregroundStyle(.white)
                 }
                 .padding(.horizontal, 20)
@@ -125,7 +126,7 @@ struct ReviewView: View {
                 } label: {
                     VStack(spacing: 3) {
                         Image(systemName: SRS.gradeSymbols[grade])
-                            .font(.system(size: 14, weight: .semibold))
+                            .scaledFont(14, weight: .semibold, relativeTo: .subheadline)
                         Text(SRS.grades[grade])
                             .font(.caption2)
                     }
@@ -138,6 +139,8 @@ struct ReviewView: View {
                     .foregroundStyle(grade == 0 ? Color.red.opacity(0.85) : Theme.accent)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(SRS.grades[grade])
+                .accessibilityHint(grade == 0 ? "间隔会重置，稍后再出现" : "按记忆程度推进下次复习时间")
             }
         }
         .padding(.horizontal, 20)
@@ -148,7 +151,7 @@ struct ReviewView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "checkmark.seal")
-                .font(.system(size: 44, weight: .light))
+                .scaledFont(44, weight: .light, relativeTo: .largeTitle)
                 .foregroundStyle(Theme.accent.opacity(0.6))
             Text("今天清空了")
                 .font(.title3.weight(.semibold))
