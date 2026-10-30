@@ -53,7 +53,7 @@ struct NoteDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
                 meta(note)
 
-                if let data = note.imageData, let ui = UIImage(data: data) {
+                if let path = note.imagePath, let ui = ImageStore.image(for: path) {
                     Image(uiImage: ui)
                         .resizable()
                         .scaledToFit()

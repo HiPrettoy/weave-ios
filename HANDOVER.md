@@ -54,7 +54,9 @@ D:\DSH\weave-ios/
     │   ├── Keychain.swift      ← API Key 的存/取（不再进 UserDefaults）
     │   ├── Exporter.swift      ← 导出 Markdown（Obsidian 双链）
     │   ├── SeedData.swift      ← 首启 6 条示例笔记
-    │   ├── ImageTool.swift     ← 图片压缩（长边 1600 / JPEG 0.72，须在后台调）
+    │   ├── ImageTool.swift     ← 图片压缩（长边 1280px / JPEG 0.68，须在后台调）
+    │   ├── ImageStore.swift    ← 图片文件（Documents/Images）+ NSCache，挡路径穿越
+    │   ├── ZipArchive.swift    ← 自研极简 ZIP 读写（备份打包，存储模式不压缩）
     │   ├── LLMKeys.swift       ← 预设服务商 + Keychain 读写
     │   └── NoteRow.swift       ← 列表行组件
     ├── Capture/
@@ -83,7 +85,8 @@ D:\DSH\weave-ios/
         ├── SettingsView.swift  ← 关联参数、AI 配置、备份恢复、导出、清库
         └── ModelPickerView.swift ← 从 /models 拉在线模型列表
     Localizable.xcstrings       ← 中文原文 + 英文译文（含 %lld 插值模板）
-WeaveTests/                     ← 纯逻辑单测（分词 / 边 / 检索 / SRS / 导出 / LLM 解析）
+WeaveTests/                     ← 纯逻辑单测（分词 / 边 / 检索 / SRS / 导出 / LLM 解析 /
+                                  备份打包 / 笔记编解码 / 图片文件名护栏）
 ```
 
 ---
@@ -104,9 +107,9 @@ WeaveTests/                     ← 纯逻辑单测（分词 / 边 / 检索 / SR
 
 | 方法 | 作用 | 副作用 |
 |---|---|---|
-| `add(content:title:tags:source:imageData:summary:concepts:)` | 新增笔记 | 插入头部 → 建复习卡 → **重建全部关联** → 防抖落盘 |
-| `update(_:)` / `updateWithoutTouch(_:)` | 改笔记 | 改数组 → 防抖落盘（**不重建关联**） |
-| `delete(_:)` | 删笔记 | 清关联 + 清卡 → **重建全部关联** → 落盘 |
+| `add(content:title:tags:source:imageData:summary:concepts:)` | 新增笔记 | 图片落成 `Documents/Images/<uuid>.jpg` → 插入头部 → 建复习卡 → **重建全部关联** → 防抖落盘 |
+| `update(_:)` | 改笔记 | 改数组（保留内存里的 `embedding`）→ 防抖落盘（**不重建关联**） |
+| `delete(_:)` | 删笔记 | 删图片文件 + 清关联 + 清卡 → **重建全部关联** → 落盘 |
 | `toggleFavorite(_:)` | 收藏 | 落盘 |
 | `grade(_:grade:)` | 复习评分 | 走 `SRS.apply` → 落盘 |
 | `rebuildLinks(threshold:maxPerNote:)` | 手动/自动重建关联 | **整库 O(n²) 重算** → 落盘 |
@@ -115,12 +118,21 @@ WeaveTests/                     ← 纯逻辑单测（分词 / 边 / 检索 / SR
 
 ### 2.2 落盘时机
 
-- `scheduleSave()`：防抖 0.5 秒，**在调用线程取快照**（值类型，无并发读写问题），编码与写盘放后台队列。
-- `saveNow()`：立即写。
+- `scheduleSave()`：防抖 0.5 秒，**在调用线程取快照**（值类型，无并发读写问题），编码与写盘进 `ioQueue`。
+- `saveNow()`：立即写，同样进 `ioQueue`。
+- 两者都带**世代号**（`saveGeneration` + `SaveLedger`）：后提交的快照总是覆盖先提交的，
+  不会出现「防抖的旧快照把 `saveNow()` 的新快照盖回去」。原来是各自往 global 并发队列丢，顺序不确定。
+- `ioQueue` 是 `DispatchQueue(label: "app.weave.store.io", qos: .utility)`，串行，天然有序。
 - 触发点：任何写操作之后；以及 `RootView` 检测到 `scenePhase != .active`（切后台）。
 
 文件路径：`FileManager.default.urls(for: .documentDirectory)[0]/weave-store.json`
 写入用 `Data.write(to:options:.atomic)`，原子替换，不会写坏半个文件。
+同目录还有 `.bak`（每次成功读盘后比对刷新）与 `weave-store.json.corrupt-<时间戳>`（解码失败时的隔离副本）。
+
+**JSON 里有什么、没什么**（`Snapshot` version 2）：
+- 有：`notes`（标题/正文/标签/来源/摘要/概念/`imagePath`）、`links`、`cards`。
+- 没有：`Note.embedding`（512 维向量，单条 JSON 的 90%，启动后重建）、`Note.legacyImageData`
+  （只用于读老文件并迁移，从不解码写回）；图片本体在 `Documents/Images/`。
 
 ### 2.3 关联算法（核心）
 
@@ -141,12 +153,12 @@ score = 0.68 × cos(向量a, 向量b)
 分词：`TextTokenizer` 中文按「单字 + 相邻二元组」，拉丁按词，带中英停用词表。
 二元组是中文没有空格时性价比最高的近似 n-gram 方案。
 
-> ⚠️ **性能现状（接手后第一件该知道的事）**
-> `AutoLinker.build` 是 O(n²)，内层循环每对笔记还要 new 两个 `Set` 做 Jaccard。
-> 粗估：**n=500 时单次 `add()` 就要主线程卡 1~2 秒，n=1000 卡 5~10 秒**。
-> `AppStore.related(to:)` 和 `note(id:)` 也都是线性查找。
-> 这是当前最大的技术债，但**换 SQLite 解决不了**（全在内存里）。
-> 正确的顺序见 §7。
+> ✅ **性能现状**
+> `AutoLinker.build` 已经不是 O(n²)：倒排桶 + `byTag` 索引先剪枝，只给共享桶的候选对打分，
+> 复杂度降到 O(n·桶大小)，几百条笔记是几十毫秒级。`AppStore.related(to:)` / `note(id:)`
+> 走 `noteIndex` 字典，不再线性扫描。
+> **仍然存在的边界**：每次 `add` / `delete` 还是整库重算（没有做增量），IDF 也是每次重算。
+> 真要再快一步需要「快照 IDF + 只重算受影响笔记」，见 §7 的未做项。
 
 ### 2.4 页面路由
 
@@ -280,7 +292,7 @@ xcodebuild test -project Weave.xcodeproj -scheme Weave \
 |---|---|
 | 语音转写单段约 60 秒 | 系统 `SFSpeechRecognizer` 的限制，本项目没有做自动分段 |
 | 关联是「词面」相似度，不是真语义模型 | 同义词（如「滤波」/「filter」）要靠 AI 增强补齐 |
-| 全量 JSON 写入 | 笔记量到几万条会明显变慢。**注意：这个阈值说早了** —— 真正的瓶颈见 §7 |
+| 全量 JSON 写入 | 每次保存整库编码。图片已外置、向量已不落盘，库文件只剩文字（7 条约 67 KB），几万条才明显变慢。按条增量写见 §7 |
 | 图谱布局一次性算完 | 节点上千时会卡，目前按几十到几百个节点设计 |
 | 没有 iCloud 同步 | 换设备靠「备份与恢复」里的 `.weave` 文件，或导出 Markdown |
 | 目标机 iOS 16.7 | SwiftData 用不了；Core Data 要 `.xcdatamodeld`，没有 Xcode 无法校验 |
@@ -308,6 +320,8 @@ xcodebuild test -project Weave.xcodeproj -scheme Weave \
 | `ForEach` 用元组做 keyPath | 编译不过 | 定义 `struct TagUsage: Identifiable` 之类的包装类型 |
 | 全局 `.tint` 影响 swipeActions | 删除按钮变成绿色/蓝色 | 删除必须显式 `.tint(Color.red)`（系统语义里删除必须是红） |
 | 两行说明被压成一行 | 入口卡片文案被截断 | `.lineLimit(2)` + `.fixedSize(horizontal:false, vertical:true)` |
+| 外层 `safeAreaInset` 传不进 `NavigationStack` | 自绘标签栏整块盖住页面底部（复习页「看答案」只露出 7px，点它命中的是「采集」） | 五页各自是 `NavigationStack`，它只认窗口自带的 Home 条 inset。改成 `VStack { ZStack{五页}; TabBar() }`，用布局真分配高度 |
+| `Text(cond ? "a" : "b")` 不走本地化 | 英文界面里三元表达式那几处仍是中文 | 三元会退化成 `String`，必须 `Text(cond ? String(localized:"a") : String(localized:"b"))` |
 
 ### 手势 / 状态机
 
@@ -318,6 +332,7 @@ xcodebuild test -project Weave.xcodeproj -scheme Weave \
 | present 后立刻再弹 cover 被吞 | 拍照页自动弹相机要 `Task.sleep(420ms)` 再弹 |
 | 图片只给高度时 `scaledToFill` 撑宽 | 「图突然变大、显示不全」。解法：外框 `.frame(height: 240)` 钉死 + 图用 `.scaledToFit()` |
 | 图谱点节点报「笔记已不在」 | sheet 的 `onAppear` 时机导致按 id 查不到。解法：`NoteDetailView` 加 `initial: Note?` 兜底快照 |
+| 详情页每键入都写 store | 五个常驻页 body 全重算、`updatedAt` 抖动、每秒往闪存写整库。解法：编辑先进本地 `draft`，0.6 秒防抖后再 `store.update`，离开页面时 `flushPendingSave()` |
 
 ### 工具链
 
@@ -351,17 +366,40 @@ xcodebuild test -project Weave.xcodeproj -scheme Weave \
 - `LibraryView` / `CaptureView` 的过滤结果与常用标签按内容指纹缓存；
   `Formatters` 统一了 DateFormatter（原来每次渲染都 new 一个）。
 
+**已修：图片外置 + 向量不落盘（1.0.22）**
+- 起因是真机实测：整库 4,405,835 字节里，**4,337,348 字符（98.5%）是同一张图的 base64**；
+  扣掉图片整个库只剩 67 KB。而那张图解码后是 3.1 MB / 3600×4800 像素 ——
+  说明 `ImageTool.compressed` 的 1600 上限**从来没生效过**。
+- 根因：判断长度用的是 `image.size`（point），相机图 1200×1600 pt × scale 3 = 3600×4800 px，
+  `longest > 1600` 比的是 point，1600 不大于 1600，于是跳过缩放、原图直存。
+  现在一律按 `cgImage` 的像素尺寸判断，长边 1280px / JPEG 0.68（单张约 150~200 KB）。
+- 图片移到 `Documents/Images/<uuid>.jpg`，`Note.imagePath` 只存**文件名**
+  （沙盒目录升级/重装会变，存绝对路径会在某次更新后全部失效）。
+  读图走 `ImageStore` 的 `NSCache`（检测到超限的旧图在迁移时重压一遍）。
+- `Note.embedding` 不再写进 JSON：它占单条笔记 JSON 的 90%，却随时能由正文重算。
+  读盘时一律 `embedding = []`，由 `rebuildLinks()` 补。
+- 备份格式同时升级：`.weave` 现在是 **zip 包**（`weave-store.json` + `Images/*`），
+  用自研的 `ZipArchive`（存储模式，不 deflate —— 内容本来就是压过的 JPEG 与 JSON）。
+  导入时兼容两种：先看 `PK\x03\x04` 魔数走 zip，否则按老版纯 JSON 解；
+  老 JSON 里的内联图会在导入后自动迁移成文件。
+- 迁移是一次性的、开机自动的：`AppStore.migrateInlineImages()` 在 `load()` 之后跑，
+  成功后设置页会出现「数据迁移」提示条（`migrationNote`）。
+
 **仍是「有意为之」的取舍**
-- 持久化还是一份 JSON。`imageData` 仍在 JSON 里 —— **第 2 步（图片外置到 Documents/Images）还没做**，
-  它现在是 JSON 体积的大头（一张 1600px JPEG ≈ 250KB，base64 后 ≈ 330KB）。
-- 仍然不引入 SQLite：JSON 全量写在几百到几千条量级够用，
-  收益要等到「按条增量写」真的成为瓶颈时才兑现。
+- 持久化还是一份 JSON，**每次保存仍整库编码**（现在只有几十 KB 量级的文字）。
+- 仍然不引入 SQLite：做完图片外置与向量不落盘之后，瓶颈已经不在存储层，
+  收益要等「按条增量写」真的成为瓶颈时才兑现。
+- **增量连边没做**：每次 `add`/`delete` 仍整库重算（只重算受影响的笔记需要先冻结 IDF，
+  那是个更大的改动）。当前复杂度 O(n·桶大小)，几百条量级感受不到。
 - 图谱力导向仍是全对排斥（300 轮），但已经挪到后台队列，且隐藏页不再触发重算。
   节点上千时会慢，这是已知边界。
 
 **测试**
 - `WeaveTests` 覆盖分词语义、向量与余弦、连边规则（含 `maxPerNote` 对称性、去重、空笔记）、
-  语义检索的坐标系校验、SM-2 调度、Markdown 导出、LLM 的 URL 拼接与 JSON 抽取。
+  语义检索的坐标系校验、SM-2 调度、Markdown 导出、LLM 的 URL 拼接与 JSON 抽取，
+  以及 `StorageTests`：ZIP 往返 / 空包 / 垃圾数据 / CRC-32 已知向量、
+  `Note` 编解码（不写 `embedding`、不写 `imageData`、读得懂老文件、缺字段有默认值）、
+  `ImageStore` 拒绝 `../` 路径穿越。
 - 运行：`xcodebuild test -project Weave.xcodeproj -scheme Weave -destination 'platform=iOS Simulator,name=iPhone 16'`，
   CI 的 `test` job 会自动跑。
 

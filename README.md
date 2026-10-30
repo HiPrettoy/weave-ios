@@ -43,7 +43,7 @@
 | AI 增强（可选）| 填接口地址 + API Key 后，「模型」一行会自动从该地址的 `/models` 拉回**可用模型列表**供你挑选（不再写死），失败可手填；另有「测试连接」做真实探测。语音 / 拍照 / 手记三个采集页里都能一键「用 AI 提炼」，拿回概括、概念与推荐标签，随笔记一起存下 |
 | 删除 | 笔记页左滑删除（红色）；首页最近列表点「⋯」可收藏/删除 |
 | 导出 | Markdown，关联输出成 `[[双链]]`，可直接拖进 Obsidian |
-| 备份 | 「设置 → 备份与恢复」生成完整 `.weave` 文件（含标签、关联、复习进度），可从文件恢复；覆盖前会先把手头数据另存一份 |
+| 备份 | 「设置 → 备份与恢复」生成完整 `.weave` 文件（zip 包，含标签、关联、复习进度与图片），可从文件恢复；也认旧版导出的纯 JSON 备份；覆盖前会先把手头数据另存一份 |
 | 深色与字号 | 配色分「文字色 / 压白字的填充色」两套，深色下正文对比度达 WCAG AA；字号跟随系统 Dynamic Type |
 | 无障碍 | 笔记行、标签栏、评分按钮、图谱统计等都有 VoiceOver 语义标签；长按开语音另有自定义动作 |
 | 多语言 | 中文原文 + 英文译文（`Weave/Localizable.xcstrings`），跟随系统语言 |
@@ -54,7 +54,7 @@
 | 决策 | 选择 | 原因 |
 |---|---|---|
 | UI | SwiftUI | 单人可以快速把三层页面写完，图谱用 `Canvas` 直接画 |
-| 持久化 | **Codable JSON 单文件** | 目标机是 iOS 16.7，SwiftData 用不了；Core Data 要 `.xcdatamodeld`，在没有 Xcode 的环境里无法校验。几百到几千条笔记全量读写完全够 |
+| 持久化 | **Codable JSON 单文件**（图片外置、向量不落盘） | 目标机是 iOS 16.7，SwiftData 用不了；Core Data 要 `.xcdatamodeld`，在没有 Xcode 的环境里无法校验。图片放 `Documents/Images/`、512 维向量只在内存里，JSON 里只剩文字，几百到几千条笔记全量读写完全够 |
 | 向量化 | 自研 Hashing Trick（512 维）+ 次线性 TF + IDF + L2 归一化 | 不引入任何依赖、离线可用、跨进程确定性（用 FNV-1a 而非 `Hasher`） |
 | 分词 | 中文单字 + 相邻二元组，拉丁按词 | 中文没有空格，二元组是性价比最高的近似 n-gram 方案 |
 | 复习 | SM-2 简化版 | 比 FSRS 好解释，比固定间隔有效 |
@@ -131,7 +131,8 @@ Weave/
   App/          WeaveApp、RootView（五个 Tab）
   Models/       Note / NoteLink / ReviewCard（纯 Codable 值类型）
   Support/      AppStore（唯一数据源）、Theme（含深色/字号适配）、Exporter、SeedData、
-                ImageTool、Keychain（API Key）、Formatters（共享日期格式）
+                ImageTool（压缩）、ImageStore（图片文件 + 内存缓存）、ZipArchive（备份打包）、
+                Keychain（API Key）、Formatters（共享日期格式）
   Capture/      文字 / 语音（Speech）/ 拍照（Vision OCR）
   Linking/      分词、向量化、自动关联、LLM 增强
   Graph/        力导向布局 + Canvas 绘制
@@ -139,7 +140,7 @@ Weave/
   Review/       SM-2、复习界面
   Settings/     关联参数、AI 配置、备份恢复、导出、清库
   Localizable.xcstrings  中文原文 + 英文译文（含 `%lld` 插值模板）
-WeaveTests/     单元测试（分词 / 连边 / 检索 / SRS / 导出 / LLM 解析）
+WeaveTests/     单元测试（分词 / 连边 / 检索 / SRS / 导出 / LLM 解析 / 备份打包 / 笔记编解码）
 Config/Info.plist
 Assets/Assets.xcassets
 project.yml     XcodeGen 配置（工程文件不入库）
@@ -185,9 +186,8 @@ iPhone（iOS 16.7.16，rootless 越狱）经 TrollStore Lite 安装后逐项走�
 - 语音转写受 `SFSpeechRecognizer` 单段时长约束（约 1 分钟），本项目**没有做自动分段**；
   超时后系统会停下来，把已识别的内容留在输入框里，可以接着再录一段
 - 关联是「词面」相似度，不是真正的语义模型。同义不同词（如「滤波」与「filter」）需要靠 AI 增强补齐
-- 持久化仍是一份全量 JSON（`Documents/weave-store.json`）。笔记量大时每次保存要整库编码；
-  按条增量写与图片外置是下一步，详见 `HANDOVER.md` §7
-- 图片仍以 base64 存在 JSON 里，一张 1600px JPEG 会让文件多出约 330KB —— 这是 JSON 体积的大头
+- 持久化仍是一份全量 JSON（`Documents/weave-store.json`），每次保存整库编码。图片已经外置、
+  向量已经不再落盘，库文件只剩文字（7 条笔记约 67 KB），按条增量写仍是下一步，详见 `HANDOVER.md` §7
 - 图谱力导向仍是全对排斥，节点上千时会慢；已经挪到后台算，且不在图谱页时不重算
 - 没有 iCloud 同步，换设备用「备份与恢复」里的 `.weave` 文件
 

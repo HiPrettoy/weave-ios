@@ -43,8 +43,8 @@
 	<array>
 		<string>arm64</string>
 	</array>
-	<!-- 应用要把备份（.weave）交给「文件」App / 分享面板，
-	     需要声明成自己的文档类型，否则系统不知道拿什么 App 打开它。 -->
+	<!-- 备份是一个 zip 包（weave-store.json + Images/），所以声明服从 public.zip-archive；
+	     但仍然能导入旧版的纯 JSON 备份（见 AppStore.restore 的魔数判断）。 -->
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
@@ -54,7 +54,8 @@
 			<string>织识备份</string>
 			<key>UTTypeConformsTo</key>
 			<array>
-				<string>public.json</string>
+				<string>public.zip-archive</string>
+				<string>public.data</string>
 			</array>
 			<key>UTTypeTagSpecification</key>
 			<dict>

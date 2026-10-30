@@ -885,6 +885,16 @@
         }
       }
     },
+    "图片已经移到 Documents/Images 下单独存放，笔记文件本身小了很多，保存也更快。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images now live under Documents/Images; the library file got much smaller and saves are faster."
+          }
+        }
+      }
+    },
     "图片笔记": {
       "localizations": {
         "en": {
@@ -955,12 +965,12 @@
         }
       }
     },
-    "备份是完整数据（笔记、关联、复习进度），换机或重装后导入即可回到原样。Markdown 导出只保留正文。": {
+    "备份是一个 .weave 压缩包，里面有笔记文件与图片，换机或重装后导入即可回到原样（旧版导出过的纯 JSON 备份也能导入）。Markdown 导出只保留正文。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A backup is the complete data (notes, links, review progress); import it after switching phones or reinstalling to get back to exactly where you were. Markdown export keeps the body text only."
+            "value": "A backup is a .weave archive containing the library file and its images, so restoring on a new device brings everything back (legacy plain-JSON backups still import). Markdown export keeps note text only."
           }
         }
       }
@@ -1163,6 +1173,16 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "已把 %lld 张图片从数据库里搬到独立文件，其中 %lld 张顺手压小了。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moved %lld image(s) out of the library file into separate files; %lld of them were downscaled on the way."
           }
         }
       }
@@ -1561,6 +1581,16 @@
         }
       }
     },
+    "数据迁移": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data migration"
+          }
+        }
+      }
+    },
     "文字": {
       "localizations": {
         "en": {
@@ -1577,6 +1607,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Untitled note"
+          }
+        }
+      }
+    },
+    "既不是 .weave 压缩包，也不是旧版的 JSON 文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is neither a .weave archive nor a legacy JSON backup."
           }
         }
       }

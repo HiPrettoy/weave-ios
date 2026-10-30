@@ -65,10 +65,22 @@ struct Note: Identifiable, Codable, Hashable {
     var source: CaptureSource
     var summary: String
     var concepts: [String]
-    var imageData: Data?
+    /// 图片文件名（落在 `Documents/Images/` 下）。**只存文件名不存绝对路径**：
+    /// iOS 沙盒目录在升级或重装后会变，存绝对路径会在某次更新后全部失效。
+    var imagePath: String?
     var isFavorite: Bool
-    /// 512 维本地向量，用于相似度计算；空数组表示还没算过
+    /// 512 维本地向量，用于相似度计算；空数组表示还没算过。
+    /// **不落盘** —— 它占单条笔记 JSON 的 90%，却随时能由正文重算出来。
     var embedding: [Float]
+
+    /// 旧版本把图片 base64 塞在 JSON 里。这里只用于「读旧文件 + 迁移成图片文件」，
+    /// 解码后由 AppStore 搬到 `Documents/Images/` 并清空，**从不参与编码**。
+    var legacyImageData: Data?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, content, createdAt, updatedAt, tags, source
+        case summary, concepts, imagePath, imageData, isFavorite
+    }
 
     init(id: UUID = UUID(),
          title: String = "",
@@ -76,7 +88,7 @@ struct Note: Identifiable, Codable, Hashable {
          tags: [String] = [],
          source: CaptureSource = .text,
          createdAt: Date = Date(),
-         imageData: Data? = nil) {
+         imagePath: String? = nil) {
         self.id = id
         self.title = title
         self.content = content
@@ -86,9 +98,47 @@ struct Note: Identifiable, Codable, Hashable {
         self.concepts = []
         self.createdAt = createdAt
         self.updatedAt = createdAt
-        self.imageData = imageData
+        self.imagePath = imagePath
         self.isFavorite = false
         self.embedding = []
+        self.legacyImageData = nil
+    }
+
+    // 手写 Codable 而不是让编译器合成：要跳过 embedding 与 legacyImageData，
+    // 同时又能读得懂老版本留下的 imageData 字段。
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
+        content = try container.decodeIfPresent(String.self, forKey: .content) ?? ""
+        tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        source = try container.decodeIfPresent(CaptureSource.self, forKey: .source) ?? .text
+        summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
+        concepts = try container.decodeIfPresent([String].self, forKey: .concepts) ?? []
+        imagePath = try container.decodeIfPresent(String.self, forKey: .imagePath)
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+        legacyImageData = try container.decodeIfPresent(Data.self, forKey: .imageData)
+
+        let created = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        createdAt = created
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? created
+        embedding = []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(content, forKey: .content)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
+        try container.encode(tags, forKey: .tags)
+        try container.encode(source, forKey: .source)
+        try container.encode(summary, forKey: .summary)
+        try container.encode(concepts, forKey: .concepts)
+        try container.encodeIfPresent(imagePath, forKey: .imagePath)
+        try container.encode(isFavorite, forKey: .isFavorite)
+        // 刻意不写 embedding，也不写 legacyImageData
     }
 
     /// 不截断的标题：标题为空时退回正文首行，再退回来源。

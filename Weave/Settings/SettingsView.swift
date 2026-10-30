@@ -143,6 +143,23 @@ struct SettingsView: View {
                     }
                 }
 
+                if let note = store.migrationNote {
+                    Section {
+                        Label {
+                            Text(note)
+                                .font(.footnote)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } icon: {
+                            Image(systemName: "externaldrive.badge.checkmark")
+                                .foregroundStyle(Theme.accent)
+                        }
+                    } header: {
+                        Text("数据迁移")
+                    } footer: {
+                        Text("图片已经移到 Documents/Images 下单独存放，笔记文件本身小了很多，保存也更快。")
+                    }
+                }
+
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
@@ -294,7 +311,7 @@ struct SettingsView: View {
                 } header: {
                     Text("备份与恢复")
                 } footer: {
-                    Text("备份是完整数据（笔记、关联、复习进度），换机或重装后导入即可回到原样。Markdown 导出只保留正文。")
+                    Text("备份是一个 .weave 压缩包，里面有笔记文件与图片，换机或重装后导入即可回到原样（旧版导出过的纯 JSON 备份也能导入）。Markdown 导出只保留正文。")
                 }
 
                 Section {

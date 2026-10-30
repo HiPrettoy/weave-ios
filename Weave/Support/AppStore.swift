@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import UIKit
 
 /// 记录「磁盘上已经是第几代快照」，用来丢弃迟到的旧快照。
 /// 单独抽成一个带锁的小对象，免得在后台闭包里直接改 AppStore 的存储属性。
@@ -42,6 +43,8 @@ final class AppStore: ObservableObject {
 
     /// 载入时如果文件损坏，这里会留下说明，界面据此提示用户而不是默默清空
     @Published private(set) var loadIssue: String?
+    /// 数据迁移（内联图片搬到独立文件）之后的一次性说明
+    @Published private(set) var migrationNote: String?
 
     private let fileURL: URL
     private var saveWorkItem: DispatchWorkItem?
@@ -83,9 +86,42 @@ final class AppStore: ObservableObject {
         let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         fileURL = directory.appendingPathComponent(filename)
         load()
+        migrateInlineImages()
         if notes.isEmpty && !UserDefaults.standard.bool(forKey: Prefs.seeded) {
             installSeed(SeedData.makeNotes())
         }
+    }
+
+    /// 把老版本内联在 JSON 里的图搬成文件。
+    ///
+    /// 早期版本 `Note.imageData` 是 base64 塞在 JSON 里的，真机上一条带图笔记就能占 4.3 MB。
+    /// 打开旧文件时顺手迁移：压到 1280px、写到 Documents/Images、把 JSON 里的那份丢掉。
+    /// 顺带把「当年没压成功」的超大图重压一遍 —— 旧版判断长度用的是 point 不是像素，
+    /// 3600×4800 的原图会原样存进来。
+    private func migrateInlineImages() {
+        var migrated = 0
+        var resized = 0
+        for offset in 0..<notes.count {
+            guard let legacy = notes[offset].legacyImageData else { continue }
+            notes[offset].legacyImageData = nil
+            migrated += 1
+
+            if let image = UIImage(data: legacy) {
+                let pixels = ImageTool.pixelSize(of: image)
+                if max(pixels.width, pixels.height) > 1280 { resized += 1 }
+                if let data = ImageTool.compressed(image),
+                   let name = ImageStore.save(data, name: notes[offset].id.uuidString) {
+                    notes[offset].imagePath = name
+                    continue
+                }
+            } else if let name = ImageStore.save(legacy, name: notes[offset].id.uuidString) {
+                // 解不出图（极少见）：原样落盘，别把用户的图扔了
+                notes[offset].imagePath = name
+            }
+        }
+        guard migrated > 0 else { return }
+        saveNow()
+        migrationNote = String(localized: "已把 \(migrated) 张图片从数据库里搬到独立文件，其中 \(resized) 张顺手压小了。")
     }
 
     private func installSeed(_ seedNotes: [Note]) {
@@ -161,7 +197,7 @@ final class AppStore: ObservableObject {
 
     func saveNow() {
         let generation = nextGeneration()
-        let snapshot = Snapshot(version: 1, notes: notes, links: links, cards: cards)
+        let snapshot = Snapshot(version: 2, notes: notes, links: links, cards: cards)
         let url = fileURL
         let ledger = self.ledger
         // 值类型快照在调用线程取好，编码与落盘全部在串行队列上，天然有序。
@@ -180,7 +216,7 @@ final class AppStore: ObservableObject {
     private func scheduleSave() {
         saveWorkItem?.cancel()
         let generation = nextGeneration()
-        let snapshot = Snapshot(version: 1, notes: notes, links: links, cards: cards)
+        let snapshot = Snapshot(version: 2, notes: notes, links: links, cards: cards)
         let url = fileURL
         let ledger = self.ledger
         let item = DispatchWorkItem {
@@ -280,8 +316,12 @@ final class AppStore: ObservableObject {
         var note = Note(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                         content: trimmed,
                         tags: tags,
-                        source: source,
-                        imageData: imageData)
+                        source: source)
+        // 图片落成独立文件，JSON 里只留文件名 —— 原来 base64 内联，
+        // 一条带图笔记就能占 4.3 MB，每次保存都要整份重写。
+        if let imageData {
+            note.imagePath = ImageStore.save(imageData, name: note.id.uuidString)
+        }
         // 采集页里如果用过「AI 提炼」，概括和概念一起带进来，详情页直接就是整理好的样子
         note.summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
         note.concepts = Array(concepts.prefix(8))
@@ -297,11 +337,15 @@ final class AppStore: ObservableObject {
         guard let offset = noteIndex[note.id], offset < notes.count else { return }
         var updated = note
         updated.updatedAt = Date()
+        // embedding 是内存里的派生值，不跟着界面草稿回写
+        updated.embedding = notes[offset].embedding
+        updated.legacyImageData = nil
         notes[offset] = updated
         scheduleSave()
     }
 
     func delete(_ note: Note) {
+        if let path = note.imagePath { ImageStore.remove(path) }
         notes.removeAll { $0.id == note.id }
         links.removeAll { $0.a == note.id || $0.b == note.id }
         cards.removeAll { $0.noteID == note.id }
@@ -327,6 +371,7 @@ final class AppStore: ObservableObject {
         notes = []
         links = []
         cards = []
+        ImageStore.removeAll()
         // 必须置 true：置 false 会让下一次 init 的「空库且未播种」判断成立，
         // 用户清空数据后重启又被灌回 6 条示例（与 SeedData 的注释相反）。
         UserDefaults.standard.set(true, forKey: Prefs.seeded)
@@ -365,26 +410,76 @@ final class AppStore: ObservableObject {
 
     // MARK: - 备份 / 恢复
 
-    /// 整库备份：与磁盘上那份 JSON 同格式，可以直接拷走或再导入。
-    /// 只导出 Markdown 是不够的 —— 设备丢了复习进度和关联就再也拿不回来。
+    /// 备份格式版本。1 = 早期「单个 JSON」，2 = 现在的 zip（JSON + 图片文件）。
+    /// 读的时候两种情况都认，写的一律是 2。
+    private static let backupManifestName = "weave-store.json"
+
+    /// 整库备份，产出标准 zip：`weave-store.json` + `Images/<文件名>`。
+    /// 只导出 Markdown 是不够的 —— 设备丢了复习进度和关联就再也拿不回来；
+    /// 而图片外置之后只导 JSON 又会丢图，所以打包成 zip。
     func makeBackup() throws -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(Snapshot(version: 1, notes: notes, links: links, cards: cards))
+        let json = try encoder.encode(Snapshot(version: 2, notes: notes, links: links, cards: cards))
+
+        var entries: [ZipArchive.Entry] = [
+            ZipArchive.Entry(name: Self.backupManifestName, data: json)
+        ]
+        let referenced = Set(notes.compactMap(\.imagePath))
+        let images = ImageStore.collect(referenced: referenced)
+        for (filename, data) in images.sorted(by: { $0.key < $1.key }) {
+            entries.append(ZipArchive.Entry(name: "Images/\(filename)", data: data))
+        }
+        return ZipArchive.make(entries)
     }
 
     /// 导入备份，返回恢复的笔记条数。调用方负责二次确认 —— 这会整体替换现有数据。
+    /// 同时接受两种格式：老的纯 JSON 备份，和新的 zip 备份。
     @discardableResult
     func restore(from data: Data) throws -> Int {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let snapshot = try decoder.decode(Snapshot.self, from: data)
+
+        var snapshot: Snapshot?
+        var images: [String: Data] = [:]
+
+        // 先试 zip：ZIP 本地文件头是 "PK\x03\x04"
+        if data.count > 4, data[data.startIndex] == 0x50, data[data.startIndex + 1] == 0x4B {
+            guard let files = ZipArchive.read(data),
+                  let manifest = files[Self.backupManifestName],
+                  let decoded = try? decoder.decode(Snapshot.self, from: manifest) else {
+                throw BackupError.unreadable
+            }
+            snapshot = decoded
+            for (name, content) in files where name.hasPrefix("Images/") {
+                let filename = String(name.dropFirst("Images/".count))
+                images[filename] = content
+            }
+        } else if let decoded = try? decoder.decode(Snapshot.self, from: data) {
+            // 老格式：单个 JSON。图片在旧备份里还是 base64 内联的，
+            // 下面赋值后会走一次 migrateInlineImages。
+            snapshot = decoded
+        }
+
+        guard let snapshot else { throw BackupError.unreadable }
 
         // 备份文件是别人给的，不能盲信：关联与复习卡必须都指向存在的笔记，
         // 否则界面里会出现点不开的幽灵条目。
         let ids = Set(snapshot.notes.map(\.id))
-        let notes = snapshot.notes
+        var notes = snapshot.notes
+        // 图片丢了的笔记不该整条丢掉 —— 正文和标签还是用户写的东西。
+        // 只把指向不存在文件的 imagePath 清掉，界面上退化成纯文字笔记。
+        // 文件本地还在的，顺手读进 images，免得下面清目录时把它删了。
+        for offset in 0..<notes.count {
+            guard let path = notes[offset].imagePath else { continue }
+            if images[path] != nil { continue }
+            if let existing = try? Data(contentsOf: ImageStore.url(for: path)) {
+                images[path] = existing
+            } else {
+                notes[offset].imagePath = nil
+            }
+        }
         let links = snapshot.links.filter { ids.contains($0.a) && ids.contains($0.b) }
         let cards = snapshot.cards.filter { ids.contains($0.noteID) }
 
@@ -398,6 +493,24 @@ final class AppStore: ObservableObject {
         // 丢掉在途的防抖写：它带着旧快照，没必要再落一次盘
         saveWorkItem?.cancel()
         saveWorkItem = nil
+
+        // 图片先落地：JSON 里引用的是文件名，文件不到笔记就成空图
+        ImageStore.removeAll()
+        if !images.isEmpty { ImageStore.restore(images) }
+
+        // 老备份里的内联图在这里再转一次
+        for offset in 0..<notes.count where notes[offset].legacyImageData != nil {
+            guard let legacy = notes[offset].legacyImageData,
+                  let image = UIImage(data: legacy),
+                  let compressed = ImageTool.compressed(image),
+                  let name = ImageStore.save(compressed, name: notes[offset].id.uuidString) else {
+                notes[offset].legacyImageData = nil
+                continue
+            }
+            notes[offset].imagePath = name
+            notes[offset].legacyImageData = nil
+        }
+
         self.notes = notes
         self.links = links
         self.cards = cards
@@ -442,4 +555,12 @@ struct LLMConfig {
     var baseURL: String
     var apiKey: String
     var model: String
+}
+
+enum BackupError: LocalizedError {
+    case unreadable
+
+    var errorDescription: String? {
+        String(localized: "既不是 .weave 压缩包，也不是旧版的 JSON 文件")
+    }
 }
