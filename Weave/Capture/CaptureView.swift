@@ -18,8 +18,8 @@ struct CaptureView: View {
     /// 页面可用高度（已扣除底部标签栏与 Home 条）
     @State private var pageHeight: CGFloat = 0
 
-    /// 每条笔记行约占的高度
-    private let rowHeight: CGFloat = 74
+    /// 每条笔记行的估算高度（实际 70~100，取保守值，避免最后一行被裁）
+    private let rowHeight: CGFloat = 78
 
     /// 最近列表放几条：按剩余空间自适应，高屏多放几条，不留大片空白
     private var recentLimit: Int {
