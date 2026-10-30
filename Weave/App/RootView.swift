@@ -89,7 +89,8 @@ private struct TabBar: View {
         .buttonStyle(.plain)
     }
 
-    /// 中间的采集：做一个实心圆，视觉上比其它四个重一档
+    /// 中间的采集：实心圆略重一档，但选中/未选中颜色要拉开，
+    /// 否则看不出当前在不在采集页
     private var captureItem: some View {
         let selected = router.tab == .capture
         return Button {
@@ -98,13 +99,13 @@ private struct TabBar: View {
             VStack(spacing: 3) {
                 ZStack {
                     Circle()
-                        .fill(selected ? Theme.accent : Theme.accent.opacity(0.82))
-                        .frame(width: 44, height: 44)
+                        .fill(selected ? Theme.accent : Theme.inkSoft.opacity(0.14))
+                        .frame(width: 38, height: 38)
                     Image(systemName: "square.and.pencil")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(selected ? Color.white : Theme.inkSoft)
                 }
-                .frame(width: 46, height: 26)
+                .frame(width: 46, height: 30)
                 Text("采集")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(selected ? Theme.accent : Theme.inkSoft)

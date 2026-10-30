@@ -20,8 +20,7 @@ struct CaptureView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // 上半部固定不滚动：这样竖向拖动才是干净的「手势区」，
-                // 不会和「最近记下的」列表的滚动手势打架。
+                // 上半部固定不滚动
                 VStack(alignment: .leading, spacing: 18) {
                     header
                     quickCapture
@@ -34,8 +33,6 @@ struct CaptureView: View {
                 .padding(.bottom, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
-                .contentShape(Rectangle())
-                .simultaneousGesture(swipe)
 
                 // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕
                 if draftFocused {
@@ -50,6 +47,9 @@ struct CaptureView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
             }
+            // 上滑/下滑手势挂在整页（含「最近记下的」列表）：
+            // 用 simultaneousGesture，和列表自身滚动、行点击都不冲突
+            .simultaneousGesture(swipe)
             .animation(.easeInOut(duration: 0.2), value: draftFocused)
             .background(Theme.background.ignoresSafeArea())
             .navigationBarHidden(true)
