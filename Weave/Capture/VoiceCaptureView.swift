@@ -5,6 +5,7 @@ struct VoiceCaptureView: View {
     @Environment(\.dismiss) private var dismiss
 
     @StateObject private var speech = SpeechService()
+    @StateObject private var ai = AIExtractor()
     @State private var edited = ""
     @State private var tagText = ""
     @State private var requestedPermission = false
@@ -29,6 +30,7 @@ struct VoiceCaptureView: View {
                     transcriptBox
 
                     if !speech.isRecording && !edited.isEmpty {
+                        aiPanel
                         tagField
                     }
                 }
@@ -138,6 +140,12 @@ struct VoiceCaptureView: View {
         .card()
     }
 
+    private var aiPanel: some View {
+        AIExtractPanel(extractor: ai,
+                       text: edited,
+                       onTags: { merged in appendTags(merged) })
+    }
+
     private var tagField: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("标签（可选）")
@@ -149,11 +157,19 @@ struct VoiceCaptureView: View {
         .card()
     }
 
+    private func appendTags(_ incoming: [String]) {
+        tagText = mergeTags(existing: tagText, incoming: incoming)
+    }
+
     private func save() {
         let text = edited.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         speech.stop()
-        _ = store.add(content: text, tags: parseTags(tagText), source: .voice)
+        _ = store.add(content: text,
+                      tags: parseTags(tagText),
+                      source: .voice,
+                      summary: ai.summary,
+                      concepts: ai.concepts)
         Haptics.success()
         dismiss()
     }

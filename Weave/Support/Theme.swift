@@ -66,3 +66,14 @@ func parseTags(_ raw: String) -> [String] {
     }
     return result
 }
+
+/// 把新标签并进已有的标签文本，重复的不再加。AI 提炼回来的标签走这里。
+func mergeTags(existing: String, incoming: [String]) -> String {
+    var merged = parseTags(existing)
+    for tag in incoming {
+        let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !merged.contains(trimmed) else { continue }
+        merged.append(trimmed)
+    }
+    return merged.prefix(12).map { "#\($0)" }.joined(separator: " ")
+}

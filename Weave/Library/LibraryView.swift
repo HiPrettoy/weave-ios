@@ -2,66 +2,111 @@ import SwiftUI
 
 struct LibraryView: View {
     @EnvironmentObject private var store: AppStore
+    @EnvironmentObject private var router: AppRouter
 
-    @State private var search = ""
+    @State private var query = ""
     @State private var filter: Filter = .all
-    @State private var tagFilter: String?
+    @State private var selectedTags: Set<String> = []
+    @State private var tagMatchAll = false
     @State private var semanticMode = false
     @State private var semanticHits: [(Note, Double)] = []
+    @FocusState private var searchFocused: Bool
 
     enum Filter: String, CaseIterable, Identifiable {
         case all = "全部"
         case favorite = "收藏"
         case voice = "语音"
         case photo = "拍照"
+        case manual = "手记"
         var id: String { rawValue }
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                searchBar
                 filterBar
-                if let tagFilter {
-                    HStack(spacing: 6) {
-                        Text("标签筛选：")
-                            .font(.caption)
-                            .foregroundStyle(Theme.inkSoft)
-                        Text("#\(tagFilter)")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.accent)
-                        Button {
-                            self.tagFilter = nil
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(Theme.inkSoft)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 6)
-                }
+                tagBar
                 list
             }
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("笔记")
-            .searchable(text: $search, prompt: "标题 / 正文 / 标签")
-            .toolbar {
-                if !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            semanticMode.toggle()
-                            runSemanticSearch()
-                        } label: {
-                            Label(semanticMode ? "语义中" : "语义",
-                                  systemImage: semanticMode ? "sparkles" : "sparkle")
-                        }
-                    }
-                }
-            }
-            .onChange(of: search) { _ in
+            .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: query) { _ in
                 if semanticMode { runSemanticSearch() }
             }
+            // 已经在笔记页时再点一次「笔记」：直接进入搜索状态
+            .onChange(of: router.searchFocusTick) { _ in
+                searchFocused = true
+            }
+            .onChange(of: router.tab) { newValue in
+                if newValue != .library { searchFocused = false }
+            }
         }
+    }
+
+    // MARK: - 搜索栏
+
+    private var trimmedQuery: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.inkSoft)
+                TextField("标题 / 正文 / 标签 / 概念", text: $query)
+                    .focused($searchFocused)
+                    .font(.subheadline)
+                    .submitLabel(.search)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                if !query.isEmpty {
+                    Button {
+                        query = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 9)
+            .background(Capsule().fill(Theme.card))
+
+            if !trimmedQuery.isEmpty {
+                Button {
+                    semanticMode.toggle()
+                    runSemanticSearch()
+                    Haptics.tap()
+                } label: {
+                    Image(systemName: semanticMode ? "sparkles" : "sparkle")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(semanticMode ? Color.white : Theme.accent)
+                        .frame(width: 34, height: 34)
+                        .background(Circle().fill(semanticMode ? Theme.accent : Theme.accentSoft))
+                }
+                .buttonStyle(.plain)
+            }
+
+            if searchFocused || !query.isEmpty {
+                Button("取消") {
+                    query = ""
+                    semanticMode = false
+                    semanticHits = []
+                    searchFocused = false
+                }
+                .font(.subheadline)
+                .foregroundStyle(Theme.accent)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
     }
 
     // MARK: - 列表
@@ -88,7 +133,7 @@ struct LibraryView: View {
 
             Section {
                 if filtered.isEmpty {
-                    Text(semanticMode ? "没有命中的笔记" : "没有匹配的笔记")
+                    Text(emptyMessage)
                         .font(.footnote)
                         .foregroundStyle(Theme.inkSoft)
                         .padding(.vertical, 20)
@@ -136,9 +181,16 @@ struct LibraryView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .scrollDismissesKeyboard(.interactively)
     }
 
-    // MARK: - 筛选条
+    private var emptyMessage: String {
+        if !selectedTags.isEmpty { return "没有同时命中这些标签的笔记" }
+        if !trimmedQuery.isEmpty { return "没有匹配的笔记" }
+        return "还没有笔记"
+    }
+
+    // MARK: - 来源筛选条
 
     private var filterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -159,25 +211,72 @@ struct LibraryView: View {
                     }
                     .buttonStyle(.plain)
                 }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+    }
 
-                ForEach(allTags.prefix(8), id: \.self) { tag in
+    // MARK: - 标签（多选）
+
+    private var tagBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 7) {
+                if selectedTags.count >= 2 {
                     Button {
-                        tagFilter = (tagFilter == tag) ? nil : tag
+                        tagMatchAll.toggle()
+                        Haptics.tap()
+                    } label: {
+                        Label(tagMatchAll ? "同时满足" : "任一匹配",
+                              systemImage: tagMatchAll ? "checkmark.circle.fill" : "circle.circle")
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Capsule().fill(Theme.inkSoft.opacity(0.12)))
+                            .foregroundStyle(Theme.ink)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                ForEach(allTags, id: \.self) { tag in
+                    let selected = selectedTags.contains(tag)
+                    Button {
+                        if selected {
+                            selectedTags.remove(tag)
+                        } else {
+                            selectedTags.insert(tag)
+                        }
+                        Haptics.tap()
                     } label: {
                         Text("#\(tag)")
                             .font(.footnote)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(
-                                Capsule().fill(tagFilter == tag ? Theme.warm : Theme.card)
+                                Capsule().fill(selected ? Theme.warm : Theme.card)
                             )
-                            .foregroundStyle(tagFilter == tag ? Color.white : Theme.inkSoft)
+                            .foregroundStyle(selected ? Color.white : Theme.inkSoft)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if !selectedTags.isEmpty {
+                    Button {
+                        selectedTags.removeAll()
+                        Haptics.tap()
+                    } label: {
+                        Text("清除 \(selectedTags.count)")
+                            .font(.caption2)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Capsule().stroke(Theme.inkSoft.opacity(0.4), lineWidth: 1))
+                            .foregroundStyle(Theme.inkSoft)
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
         }
     }
 
@@ -186,8 +285,12 @@ struct LibraryView: View {
         for note in store.notes {
             for tag in note.tags { counter[tag, default: 0] += 1 }
         }
-        return counter.sorted { $0.value > $1.value }.map { $0.key }
+        return counter.sorted {
+            $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value
+        }.map { $0.key }
     }
+
+    // MARK: - 过滤
 
     private var filtered: [Note] {
         var result = store.sortedNotes
@@ -196,28 +299,31 @@ struct LibraryView: View {
         case .favorite: result = result.filter { $0.isFavorite }
         case .voice: result = result.filter { $0.source == .voice }
         case .photo: result = result.filter { $0.source == .photo }
+        case .manual: result = result.filter { $0.source == .manual }
         }
 
-        if let tagFilter {
-            result = result.filter { $0.tags.contains(tagFilter) }
+        if !selectedTags.isEmpty {
+            result = result.filter { note in
+                let tags = Set(note.tags)
+                return tagMatchAll ? selectedTags.isSubset(of: tags)
+                                  : !selectedTags.isDisjoint(with: tags)
+            }
         }
 
-        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty, !semanticMode else { return result }
+        guard !trimmedQuery.isEmpty, !semanticMode else { return result }
         return result.filter { note in
-            note.title.localizedCaseInsensitiveContains(query)
-                || note.content.localizedCaseInsensitiveContains(query)
-                || note.tags.contains { $0.localizedCaseInsensitiveContains(query) }
-                || note.concepts.contains { $0.localizedCaseInsensitiveContains(query) }
+            note.title.localizedCaseInsensitiveContains(trimmedQuery)
+                || note.content.localizedCaseInsensitiveContains(trimmedQuery)
+                || note.tags.contains { $0.localizedCaseInsensitiveContains(trimmedQuery) }
+                || note.concepts.contains { $0.localizedCaseInsensitiveContains(trimmedQuery) }
         }
     }
 
     private func runSemanticSearch() {
-        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard semanticMode, !query.isEmpty else {
+        guard semanticMode, !trimmedQuery.isEmpty else {
             semanticHits = []
             return
         }
-        semanticHits = store.semanticSearch(query, limit: 10)
+        semanticHits = store.semanticSearch(trimmedQuery, limit: 10)
     }
 }

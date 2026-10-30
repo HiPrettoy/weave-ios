@@ -10,6 +10,7 @@ struct PhotoCaptureView: View {
     @State private var compressed: Data?
     @State private var text = ""
     @State private var tagText = ""
+    @StateObject private var ai = AIExtractor()
     @State private var isRecognizing = false
     @State private var showCamera = false
     @State private var pickerItem: PhotosPickerItem?
@@ -32,6 +33,7 @@ struct PhotoCaptureView: View {
                     if image != nil {
                         editor
                         if !isRecognizing {
+                            aiPanel
                             tagField
                         }
                     }
@@ -193,6 +195,14 @@ struct PhotoCaptureView: View {
         .card()
     }
 
+    private var aiPanel: some View {
+        AIExtractPanel(extractor: ai,
+                       text: text,
+                       onTags: { incoming in
+                           tagText = mergeTags(existing: tagText, incoming: incoming)
+                       })
+    }
+
     private var tagField: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("标签（可选）")
@@ -240,7 +250,9 @@ struct PhotoCaptureView: View {
                       title: String(title.prefix(30)),
                       tags: parseTags(tagText),
                       source: .photo,
-                      imageData: compressed)
+                      imageData: compressed,
+                      summary: ai.summary,
+                      concepts: ai.concepts)
         Haptics.success()
         dismiss()
     }

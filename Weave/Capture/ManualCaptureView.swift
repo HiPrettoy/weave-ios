@@ -7,6 +7,7 @@ struct ManualCaptureView: View {
     @State private var title = ""
     @State private var content = ""
     @State private var tagText = ""
+    @StateObject private var ai = AIExtractor()
     @FocusState private var contentFocused: Bool
 
     private var canSave: Bool {
@@ -30,6 +31,18 @@ struct ManualCaptureView: View {
                         .frame(minHeight: 220)
                         .scrollContentBackground(.hidden)
                         .font(.body)
+
+                    Divider().opacity(0.4)
+
+                    AIExtractPanel(extractor: ai,
+                                   text: content,
+                                   onTags: { incoming in
+                                       tagText = mergeTags(existing: tagText, incoming: incoming)
+                                   },
+                                   onUseSummaryAsTitle: { summary in
+                                       title = String(summary.prefix(30))
+                                       Haptics.tap()
+                                   })
 
                     Divider().opacity(0.4)
 
@@ -74,7 +87,12 @@ struct ManualCaptureView: View {
 
     private func save() {
         guard canSave else { return }
-        _ = store.add(content: content, title: title, tags: parsed, source: .manual)
+        _ = store.add(content: content,
+                      title: title,
+                      tags: parsed,
+                      source: .manual,
+                      summary: ai.summary,
+                      concepts: ai.concepts)
         Haptics.success()
         dismiss()
     }

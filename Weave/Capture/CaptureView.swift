@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CaptureView: View {
     @EnvironmentObject private var store: AppStore
+    @EnvironmentObject private var router: AppRouter
 
     @State private var draft = ""
     @State private var showVoice = false
@@ -18,19 +19,46 @@ struct CaptureView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+            VStack(spacing: 0) {
+                // 上半部固定不滚动：这样竖向拖动才是干净的「手势区」，
+                // 不会和「最近记下的」列表的滚动手势打架。
+                VStack(alignment: .leading, spacing: 18) {
                     header
                     quickCapture
-                    methods
-                    recentSection
+                    if !draftFocused {
+                        methods
+                        swipeHint
+                    }
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 36)
+                .padding(.bottom, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .simultaneousGesture(swipe)
+
+                // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕
+                if draftFocused {
+                    Spacer(minLength: 0)
+                } else {
+                    ScrollView {
+                        recentSection
+                            .padding(.horizontal, 20)
+                            .padding(.top, 4)
+                            .padding(.bottom, 28)
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                }
             }
-            .scrollDismissesKeyboard(.interactively)
+            .animation(.easeInOut(duration: 0.2), value: draftFocused)
             .background(Theme.background.ignoresSafeArea())
             .navigationBarHidden(true)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("收起") { draftFocused = false }
+                        .font(.subheadline.weight(.medium))
+                }
+            }
             .navigationDestination(isPresented: Binding(
                 get: { selectedNoteID != nil },
                 set: { if !$0 { selectedNoteID = nil } }
@@ -77,7 +105,46 @@ struct CaptureView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            // 已经在采集页时再点一次「采集」：直接给输入框焦点、弹键盘
+            .onChange(of: router.captureFocusTick) { _ in
+                draftFocused = true
+            }
+            // 首页下滑：直接进相机
+            .onChange(of: router.cameraTick) { _ in
+                draftFocused = false
+                showPhoto = true
+            }
+            .onChange(of: router.tab) { newValue in
+                if newValue != .capture { draftFocused = false }
+            }
         }
+    }
+
+    // MARK: - 手势
+
+    private var swipe: some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onEnded { value in
+                let dy = value.translation.height
+                // 只认明确的竖动手势，横着划或者斜着划都不算
+                guard abs(dy) > abs(value.translation.width) * 1.5, abs(dy) > 64 else { return }
+                if dy < 0 {
+                    router.goLibrary()
+                } else {
+                    router.openCamera()
+                }
+            }
+    }
+
+    private var swipeHint: some View {
+        HStack(spacing: 14) {
+            Label("上滑看全部笔记", systemImage: "arrow.up")
+            Label("下滑直接拍照", systemImage: "arrow.down")
+            Spacer()
+        }
+        .font(.caption2)
+        .foregroundStyle(Theme.inkSoft.opacity(0.9))
+        .padding(.top, -4)
     }
 
     // MARK: - 头部
@@ -98,7 +165,7 @@ struct CaptureView: View {
             .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 16)
+        .padding(.top, 12)
     }
 
     private func statPill(_ value: String, _ label: String) -> some View {
@@ -121,9 +188,11 @@ struct CaptureView: View {
         VStack(alignment: .leading, spacing: 12) {
             TextField("现在想到什么？一句话也行", text: $draft, axis: .vertical)
                 .focused($draftFocused)
-                .lineLimit(3...8)
+                .lineLimit(2...6)
                 .font(.body)
                 .foregroundStyle(Theme.ink)
+                .submitLabel(.done)
+                .onSubmit(saveDraft)
 
             HStack {
                 Text("保存后会自动找关联")
@@ -150,21 +219,23 @@ struct CaptureView: View {
         guard canSave else { return }
         let text = draft
         draft = ""
+        // 存完就收起键盘：手机上这永远是最可靠的一条退路，
+        // 顺便把下面的最近列表露出来，能立刻看到刚记下的那条。
         draftFocused = false
         _ = store.add(content: text, source: .text)
         Haptics.success()
         showToast("已记下，正在建立关联")
     }
 
-    // MARK: - 三种采集方式
+    // MARK: - 三种采集方式（语音放正中间）
 
     private var methods: some View {
         HStack(spacing: 12) {
-            methodButton(title: "语音", icon: "waveform", caption: "说出来\n自动转文字", tint: Theme.accent) {
-                showVoice = true
-            }
             methodButton(title: "拍照", icon: "camera.viewfinder", caption: "点开即相机\nOCR 提字", tint: Theme.warm) {
                 showPhoto = true
+            }
+            methodButton(title: "语音", icon: "waveform", caption: "说出来\n自动转文字", tint: Theme.accent) {
+                showVoice = true
             }
             methodButton(title: "手记", icon: "square.and.pencil", caption: "写长一点\n再打标签", tint: Color(uiColor: .systemIndigo)) {
                 showManual = true
@@ -275,7 +346,8 @@ struct CaptureView: View {
         showToast("已删除这条笔记")
     }
 
-    private func showToast(_ message: String) {        withAnimation(.easeOut(duration: 0.22)) { toast = message }
+    private func showToast(_ message: String) {
+        withAnimation(.easeOut(duration: 0.22)) { toast = message }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
             withAnimation(.easeOut(duration: 0.2)) { toast = nil }
         }

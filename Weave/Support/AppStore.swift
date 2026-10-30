@@ -129,15 +129,20 @@ final class AppStore: ObservableObject {
              title: String = "",
              tags: [String] = [],
              source: CaptureSource,
-             imageData: Data? = nil) -> Note? {
+             imageData: Data? = nil,
+             summary: String = "",
+             concepts: [String] = []) -> Note? {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty || imageData != nil else { return nil }
 
-        let note = Note(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+        var note = Note(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                         content: trimmed,
                         tags: tags,
                         source: source,
                         imageData: imageData)
+        // 采集页里如果用过「AI 提炼」，概括和概念一起带进来，详情页直接就是整理好的样子
+        note.summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        note.concepts = Array(concepts.prefix(8))
         notes.insert(note, at: 0)
         cards.append(ReviewCard(noteID: note.id))
         rebuildLinks()
