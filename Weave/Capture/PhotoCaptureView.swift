@@ -225,14 +225,22 @@ struct PhotoCaptureView: View {
             } else {
                 hint = "这张图片读不出来，换一张试试"
             }
+            // 取完就清空选择：否则再选同一张图时 itemIdentifier 没变，
+            // onChange 不触发，界面看起来就是「点了没反应」。
+            self.pickerItem = nil
         }
     }
 
     private func handle(_ picked: UIImage) async {
         image = picked
-        compressed = ImageTool.compressed(picked)
         isRecognizing = true
         hint = nil
+        // 缩放 + JPEG 编码是纯 CPU 活，原来在主线程做，选大图会卡住界面；
+        // 挪到后台，OCR 也一起等它。
+        let scaled = await Task.detached(priority: .userInitiated) {
+            ImageTool.compressed(picked)
+        }.value
+        compressed = scaled
         let recognized = await OCRService.recognize(in: picked)
         isRecognizing = false
         if recognized.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -246,13 +254,17 @@ struct PhotoCaptureView: View {
     private func save() {
         let body = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let title = body.split(separator: "\n").first.map(String.init) ?? ""
-        _ = store.add(content: body,
-                      title: String(title.prefix(30)),
-                      tags: parseTags(tagText),
-                      source: .photo,
-                      imageData: compressed,
-                      summary: ai.summary,
-                      concepts: ai.concepts)
+        guard store.add(content: body,
+                        title: String(title.prefix(30)),
+                        tags: parseTags(tagText),
+                        source: .photo,
+                        imageData: compressed,
+                        summary: ai.summary,
+                        concepts: ai.concepts) != nil else {
+            Haptics.warning()
+            hint = "没有正文也没有图片，这条没能存下"
+            return
+        }
         Haptics.success()
         dismiss()
     }

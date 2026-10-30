@@ -7,18 +7,27 @@ struct CaptureView: View {
     @State private var draft = ""
     /// 快记时用标签芯片挑中的标签
     @State private var draftTags: [String] = []
-    @State private var showVoice = false
-    @State private var showPhoto = false
-    @State private var showManual = false
+    /// 三个采集面板共用一个 item 型 sheet。
+    /// 原来挂了三个 .sheet(isPresented:) 在同一个节点上，SwiftUI 只会保留最后一个，
+    /// 别的情形下则出现「点了没反应」——同一节点只能有一个 presentation 生效。
+    @State private var activeSheet: CaptureSheet?
     @State private var toast: String?
+    @State private var toastTask: Task<Void, Never>?
     @State private var selectedNoteID: UUID?
     @State private var actionNote: Note?
     @FocusState private var draftFocused: Bool
+
+    enum CaptureSheet: String, Identifiable {
+        case voice, photo, manual
+        var id: String { rawValue }
+    }
 
     /// 上半部（标题+输入+三入口+提示）实测高度，用来算下方还能放几条
     @State private var topBlockHeight: CGFloat = 0
     /// 页面可用高度（已扣除底部标签栏与 Home 条）
     @State private var pageHeight: CGFloat = 0
+    /// 常用标签的缓存壳（引用类型，改它不会触发整页重算）
+    @State private var cache = TagUsageCacheBox()
 
     /// 每条笔记行的估算高度（实际 70~100，取保守值，避免最后一行被裁）
     private let rowHeight: CGFloat = 78
@@ -32,20 +41,40 @@ struct CaptureView: View {
         return max(3, min(8, fits))
     }
 
-    /// 已用过的标签，按使用次数从多到少排（常用的排前面）
+    /// 已用过的标签，按使用次数从多到少排（常用的排前面）。
+    /// 这个列表在输入框有内容时每敲一个字都会被读一次，
+    /// 原来是每次访问都遍历全库 tags 建字典再排序，输入长文时明显掉帧。
+    /// 现在按 notes 的内容指纹缓存，笔记没变就直接复用。
     private var popularTags: [TagUsage] {
+        let key = tagCacheKey
+        if let cached = cache.tags, cached.key == key {
+            return cached.items
+        }
         var counts: [String: Int] = [:]
         for note in store.notes {
             for t in note.tags where !t.isEmpty {
                 counts[t, default: 0] += 1
             }
         }
-        return counts
+        let items = counts
             .map { TagUsage(tag: $0.key, count: $0.value) }
             .sorted { lhs, rhs in
                 if lhs.count != rhs.count { return lhs.count > rhs.count }
                 return lhs.tag < rhs.tag
             }
+        cache.tags = TagCache(key: key, items: items)
+        return items
+    }
+
+    /// 只哈希 id 与 updatedAt：比重新统计一遍标签便宜一个数量级
+    private var tagCacheKey: Int {
+        var hasher = Hasher()
+        hasher.combine(store.notes.count)
+        for note in store.notes {
+            hasher.combine(note.id)
+            hasher.combine(note.updatedAt)
+        }
+        return hasher.finalize()
     }
 
     private var recent: [Note] {
@@ -56,13 +85,12 @@ struct CaptureView: View {
 
     var body: some View {
         NavigationStack {
-            // 用 GeometryReader 拿到状态栏高度，让内容顶进 safe area：
-            // 其他页的标题紧贴状态栏（导航栏区域被内容占满），
-            // 这里如果也从 safe area 下才开始排，顶部就会空出一大条
+            // GeometryReader 只用来量页面高度（决定最近笔记显示几条），
+            // 不再忽略顶部安全区 —— 忽略之后 geo.safeAreaInsets.top 恒为 0，
+            // 只能靠手写兜底值，灵动岛与老机型都对不上。
             GeometryReader { geo in
                 captureBody(in: geo)
             }
-            .ignoresSafeArea(.container, edges: .top)
             .onPreferenceChange(TopBlockHeightKey.self) { newValue in
                 topBlockHeight = newValue
             }
@@ -84,14 +112,15 @@ struct CaptureView: View {
                     NoteDetailView(noteID: id)
                 }
             }
-            .sheet(isPresented: $showVoice) {
-                VoiceCaptureView().environmentObject(store)
-            }
-            .sheet(isPresented: $showPhoto) {
-                PhotoCaptureView().environmentObject(store)
-            }
-            .sheet(isPresented: $showManual) {
-                ManualCaptureView().environmentObject(store)
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .voice:
+                    VoiceCaptureView().environmentObject(store)
+                case .photo:
+                    PhotoCaptureView().environmentObject(store)
+                case .manual:
+                    ManualCaptureView().environmentObject(store)
+                }
             }
             .confirmationDialog(actionTitle, isPresented: Binding(
                 get: { actionNote != nil },
@@ -129,12 +158,12 @@ struct CaptureView: View {
             // 首页下滑：直接进相机
             .onChange(of: router.cameraTick) { _ in
                 draftFocused = false
-                showPhoto = true
+                activeSheet = .photo
             }
             // 长按底部采集：直接进语音
             .onChange(of: router.voiceTick) { _ in
                 draftFocused = false
-                showVoice = true
+                activeSheet = .voice
             }
             .onChange(of: router.tab) { newValue in
                 if newValue != .capture { draftFocused = false }
@@ -147,7 +176,7 @@ struct CaptureView: View {
     /// 拆成独立函数，避免 body 的类型检查复杂到编译超时
     private func captureBody(in geo: GeometryProxy) -> some View {
         VStack(spacing: 0) {
-            topBlock(in: geo)
+            topBlock
 
             // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕。
             // 这里刻意不用 ScrollView：滚动手势会吞掉上滑进笔记的手势。
@@ -172,7 +201,7 @@ struct CaptureView: View {
     }
 
     /// 上半部：标题 + 输入框 + 三入口 + 提示（固定不滚动）
-    private func topBlock(in geo: GeometryProxy) -> some View {
+    private var topBlock: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
             quickCapture
@@ -182,7 +211,7 @@ struct CaptureView: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.top, headerTopInset(in: geo))
+        .padding(.top, headerTopInset)
         .padding(.bottom, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .layoutPriority(1)
@@ -196,18 +225,23 @@ struct CaptureView: View {
 
     // MARK: - 沉浸式顶部
 
-    /// 顶部内边距：让「织识」标题与状态栏文字之间留约 26pt 呼吸。
-    /// 实测 inset = status-12 时字形顶部距状态栏文字 13pt，偏贴，这里补 13pt。
-    private func headerTopInset(in geo: GeometryProxy) -> CGFloat {
-        let status = geo.safeAreaInsets.top
-        return status > 0 ? status + 1 : 47
-    }
+    /// 顶部内边距。
+    ///
+    /// 原来这里靠 `.ignoresSafeArea(edges: .top)` + 手写兜底值 47 来贴状态栏：
+    /// 视图一旦忽略安全区，geo.safeAreaInsets.top 就恒为 0，兜底值成了唯一分支，
+    /// 灵动岛机型和带 Home 键的机型都会错位。
+    /// 现在不忽略顶安全区（内容自然从状态栏下开始），只补 1pt 呼吸即可，
+    /// 各机型都自动正确，也不再用 UIApplication 去问窗口。
+    private let headerTopInset: CGFloat = 1
 
     // MARK: - 手势
 
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 24)
             .onEnded { value in
+                // 键盘弹起时整页在编辑状态，滑动不该跳页：
+                // 否则想选中文字/移动光标时手指一竖着走就被甩到大列表或相机去。
+                guard !draftFocused else { return }
                 let dy = value.translation.height
                 // 只认明确的竖动手势，横着划或者斜着划都不算
                 guard abs(dy) > abs(value.translation.width) * 1.5, abs(dy) > 64 else { return }
@@ -378,7 +412,15 @@ struct CaptureView: View {
         // 存完就收起键盘：手机上这永远是最可靠的一条退路，
         // 顺便把下面的最近列表露出来，能立刻看到刚记下的那条。
         draftFocused = false
-        _ = store.add(content: text, tags: tags, source: .text)
+        // add 会校验内容，失败时返回 nil。原来直接丢返回值再无条件弹「已记下」，
+        // 用户会以为存住了、其实什么也没留下。
+        guard store.add(content: text, tags: tags, source: .text) != nil else {
+            draft = text
+            draftTags = tags
+            Haptics.warning()
+            showToast("这条没存下，内容已经放回输入框")
+            return
+        }
         Haptics.success()
         showToast(tags.isEmpty ? "已记下，正在建立关联" : "已记下（\(tags.count) 个标签），正在建立关联")
     }
@@ -388,13 +430,13 @@ struct CaptureView: View {
     private var methods: some View {
         HStack(spacing: 10) {
             methodButton(title: "拍照", icon: "camera.viewfinder", caption: "点开即相机\nOCR 提字", tint: Theme.warm) {
-                showPhoto = true
+                activeSheet = .photo
             }
             methodButton(title: "语音", icon: "waveform", caption: "说出来\n自动转文字", tint: Theme.accent) {
-                showVoice = true
+                activeSheet = .voice
             }
             methodButton(title: "手记", icon: "square.and.pencil", caption: "写长一点\n再打标签", tint: Color(uiColor: .systemIndigo)) {
-                showManual = true
+                activeSheet = .manual
             }
         }
     }
@@ -521,8 +563,12 @@ struct CaptureView: View {
     }
 
     private func showToast(_ message: String) {
+        // 每次都取消上一个计时，否则连续保存时先前的计时会提前把新提示抹掉
+        toastTask?.cancel()
         withAnimation(.easeOut(duration: 0.22)) { toast = message }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+        toastTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_600_000_000)
+            guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.2)) { toast = nil }
         }
     }
@@ -543,4 +589,15 @@ private struct TagUsage: Identifiable {
     let tag: String
     let count: Int
     var id: String { tag }
+}
+
+/// 常用标签的缓存：把「上一次算出来的结果 + 当时的指纹」放在引用类型里，
+/// 这样更新缓存不会触发 Observation 的整页重算
+private struct TagCache {
+    let key: Int
+    let items: [TagUsage]
+}
+
+private final class TagUsageCacheBox {
+    var tags: TagCache?
 }

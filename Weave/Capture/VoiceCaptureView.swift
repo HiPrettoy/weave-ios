@@ -9,8 +9,10 @@ struct VoiceCaptureView: View {
     @State private var edited = ""
     @State private var tagText = ""
     @State private var requestedPermission = false
-    /// 本轮录音之前输入框里已有的文字，转写结果追加在它后面
-    @State private var prefix = ""
+    /// 上一次收到的完整转写，用来算增量。
+    /// 原来每次回调都拿 prefix + 整段覆盖输入框，录音期间手工改的字会被抹掉；
+    /// 改成只追加新识别出来的那一段，用户边录边改也不会丢。
+    @State private var lastTranscript = ""
 
     var body: some View {
         NavigationStack {
@@ -59,11 +61,7 @@ struct VoiceCaptureView: View {
                 if granted { speech.start() }
             }
             .onChange(of: speech.transcript) { newValue in
-                // 只在录音过程中同步，停止之后系统迟到的回调不许再改动输入框
-                guard speech.isRecording else { return }
-                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return }
-                edited = prefix + newValue
+                absorbTranscript(newValue)
             }
             .onDisappear {
                 speech.stop()
@@ -72,35 +70,37 @@ struct VoiceCaptureView: View {
     }
 
     private var waveform: some View {
-        TimelineView(.animation(minimumInterval: 0.12, paused: !speech.isRecording)) { timeline in
-            let phase = timeline.date.timeIntervalSinceReferenceDate
-            HStack(spacing: 4) {
-                ForEach(0..<28, id: \.self) { index in
-                    let wave = sin(phase * 4 + Double(index) * 0.55)
-                    let height = speech.isRecording ? CGFloat(14 + abs(wave) * 40) : 6
-                    Capsule()
-                        .fill(speech.isRecording
-                              ? Theme.accent.opacity(0.35 + abs(wave) * 0.55)
-                              : Theme.inkSoft.opacity(0.2))
-                        .frame(width: 3.5, height: height)
-                }
+        // 用真实电平驱动：原来是一条与声音无关的正弦动画，
+        // 麦克风没收到任何东西时它也照样跳。
+        HStack(spacing: 4) {
+            ForEach(0..<28, id: \.self) { index in
+                let tap = speech.isRecording ? speech.level : 0
+                // 中间高两边低，让电平看起来像一根柱子而不是整排齐平
+                let center = 1 - abs(Double(index) - 13.5) / 13.5
+                let shape = 0.35 + center * 0.65
+                let height = speech.isRecording
+                    ? CGFloat(6 + (4 + tap * 46) * shape)
+                    : 6
+                Capsule()
+                    .fill(speech.isRecording
+                          ? Theme.accent.opacity(0.35 + tap * 0.55)
+                          : Theme.inkSoft.opacity(0.2))
+                    .frame(width: 3.5, height: height)
+                    .animation(.easeOut(duration: 0.12), value: height)
             }
-            .frame(height: 56)
         }
+        .frame(height: 56)
     }
 
     private var recordButton: some View {
         Button {
             Haptics.tap()
             if speech.isRecording {
-                // 先留一份，再停：停止瞬间的迟到回调可能把 transcript 改空
-                let snapshot = speech.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                // 停止前把当前累积结果再吸一次：终稿可能在 isRecording 变 false 之后才到
+                absorbTranscript(speech.transcript)
                 speech.stop()
-                if !snapshot.isEmpty {
-                    edited = prefix + speech.transcript
-                }
             } else {
-                prefix = edited.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : edited + "\n"
+                lastTranscript = ""
                 speech.start()
             }
         } label: {
@@ -155,6 +155,28 @@ struct VoiceCaptureView: View {
                 .font(.subheadline)
         }
         .card()
+    }
+
+    /// 系统实时转写会不断重写前面已经识别过的字，所以不能整段覆盖输入框。
+    /// 这里用最长公共前缀挑出「这一轮真正新增的部分」，只把增量追加进去，
+    /// 录音中途手工改的字就保住了。停止之后迟到的终稿也走这里（有公共前缀去重，不会重复）。
+    private func absorbTranscript(_ full: String) {
+        guard !full.isEmpty, full != lastTranscript else { return }
+        let common = Self.sharedPrefixLength(full, lastTranscript)
+        let addition = String(full.dropFirst(common))
+        lastTranscript = full
+        guard !addition.isEmpty else { return }
+        edited += addition
+    }
+
+    private static func sharedPrefixLength(_ lhs: String, _ rhs: String) -> Int {
+        var count = 0
+        var left = lhs.makeIterator()
+        var right = rhs.makeIterator()
+        while let a = left.next(), let b = right.next(), a == b {
+            count += 1
+        }
+        return count
     }
 
     private func appendTags(_ incoming: [String]) {

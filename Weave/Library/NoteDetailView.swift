@@ -93,7 +93,9 @@ struct NoteDetailView: View {
             // 都跑一遍整库 O(n²)，而这些笔记的索引文本根本没变。
             flushPendingSave()
             store.saveNow()
-            if let note = draft, note.indexingText != indexingAtEntry {
+            // 笔记可能刚被删掉（delete 内部已经重建过关联），这里不再重复
+            guard let note = draft, store.note(id: note.id) != nil else { return }
+            if note.indexingText != indexingAtEntry {
                 store.rebuildLinks()
                 // 重算过了就更新基线：页面再出现时不该重复付这笔钱。
                 indexingAtEntry = note.indexingText
@@ -101,6 +103,9 @@ struct NoteDetailView: View {
         }
         .confirmationDialog("删除这条笔记？", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("删除", role: .destructive) {
+                // 丢掉在途的防抖任务，否则它会在 delete 之后又把这条笔记写回 store。
+                pendingSave?.cancel()
+                pendingSave = nil
                 if let note = draft { store.delete(note) }
                 dismiss()
             }
@@ -405,8 +410,7 @@ struct NoteDetailView: View {
     }
 
     private func dateText(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "M月d日 HH:mm"
-        return formatter.string(from: date)
+        // 原来每次 body 都 new 一个 DateFormatter，详情页滚动时成本很高
+        Formatters.fullDate.string(from: date)
     }
 }

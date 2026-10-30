@@ -1,10 +1,14 @@
 import SwiftUI
+import UIKit
 
 struct RootView: View {
     @EnvironmentObject private var store: AppStore
     @Environment(\.scenePhase) private var scenePhase
 
     @StateObject private var router = AppRouter()
+    /// 键盘弹起时把标签栏收走：采集页的输入框在底部，标签栏会正好压在键盘上方，
+    /// 既挡住候选词条，又让「收起键盘」和「切页」两个操作抢同一块屏幕。
+    @State private var keyboardVisible = false
 
     var body: some View {
         ZStack {
@@ -20,15 +24,42 @@ struct RootView: View {
                 SettingsView().modifier(TabPage(active: router.tab == .settings))
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                TabBar()
+                if keyboardVisible {
+                    Color.clear.frame(height: 0)
+                } else {
+                    TabBar()
+                }
             }
+            .animation(.easeOut(duration: 0.18), value: keyboardVisible)
         }
         .environmentObject(router)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            keyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardVisible = false
+        }
         .onChange(of: scenePhase) { phase in
             if phase != .active {
                 store.saveNow()
             }
         }
+    }
+}
+
+/// 顶层页面是否在前台。
+///
+/// 五页常驻是为了保住各自的导航层级与搜索词，代价是隐藏页的 body 照样会被求值。
+/// 页面自己拿不到「我在不在前台」，于是像图谱这种重活（力导向布局）即便用户
+/// 正在别的页也会跟着数据变化重算一次。用环境值把这个事实传下去。
+private struct PageActiveKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var pageIsActive: Bool {
+        get { self[PageActiveKey.self] }
+        set { self[PageActiveKey.self] = newValue }
     }
 }
 
@@ -40,6 +71,7 @@ private struct TabPage: ViewModifier {
             .opacity(active ? 1 : 0)
             .allowsHitTesting(active)
             .accessibilityHidden(!active)
+            .environment(\.pageIsActive, active)
     }
 }
 

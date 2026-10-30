@@ -1,6 +1,9 @@
 import Foundation
 import UIKit
-import Vision
+// Vision 的类型还没标 Sendable，但 VNImageRequestHandler.perform 本身是线程安全的
+// 一次性调用。用 @preconcurrency 压掉「捕获到非 Sendable 的 request」这类噪音警告，
+// 而不是把整个模块的并发检查关掉。
+@preconcurrency import Vision
 
 /// 端上 OCR：Vision 的文字识别，中文英文都能认，完全离线。
 enum OCRService {
@@ -31,8 +34,10 @@ enum OCRService {
     }
 }
 
-/// 防止 continuation 被 resume 两次导致崩溃
-private final class ResumeGuard {
+/// 防止 continuation 被 resume 两次导致崩溃。
+/// 内部状态全部由 NSLock 保护，跨线程传递是安全的，但编译器看不出来，
+/// 所以显式声明 @unchecked Sendable（这个"unchecked"是我们自己保证的）。
+private final class ResumeGuard: @unchecked Sendable {
     private let lock = NSLock()
     private var finished = false
 

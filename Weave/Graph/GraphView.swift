@@ -2,9 +2,13 @@ import SwiftUI
 
 struct GraphView: View {
     @EnvironmentObject private var store: AppStore
+    /// 五页常驻，隐藏页也会被重新求值。力导向是这里最贵的计算，
+    /// 用户不在图谱页时不该白算一遍。
+    @Environment(\.pageIsActive) private var pageIsActive
 
     @State private var positions: [UUID: CGPoint] = [:]
     @State private var degrees: [UUID: Int] = [:]
+    @State private var labels: [UUID: String] = [:]
     @State private var canvasSize: CGSize = .zero
     @State private var scale: CGFloat = 1
     @State private var baseScale: CGFloat = 1
@@ -12,9 +16,22 @@ struct GraphView: View {
     @State private var baseOffset: CGSize = .zero
     @State private var selectedNote: Note?
     @State private var signature = ""
+    /// 每发起一次布局就自增，后台算完时用它丢弃过期结果
+    @State private var layoutToken = 0
+    @State private var isLayouting = false
 
+    /// 签名要能反映「内容变了」而不只是「条数变了」。
+    /// 原来只看 count，删除一条再新增一条（数量相同）就不会重排，
+    /// 新节点因为 positions 里没有它而直接画不出来。
     private var currentSignature: String {
-        "\(store.notes.count)-\(store.links.count)"
+        var hasher = Hasher()
+        hasher.combine(store.notes.count)
+        for note in store.notes {
+            hasher.combine(note.id)
+            hasher.combine(note.updatedAt)
+        }
+        hasher.combine(store.links.count)
+        return String(hasher.finalize())
     }
 
     var body: some View {
@@ -42,14 +59,21 @@ struct GraphView: View {
                 }
                 .onAppear {
                     canvasSize = geo.size
-                    relayout(size: geo.size)
+                    if pageIsActive { relayout(size: geo.size) }
                 }
                 .onChange(of: geo.size) { newValue in
                     canvasSize = newValue
-                    relayout(size: newValue)
+                    if pageIsActive { relayout(size: newValue) }
                 }
                 .onChange(of: currentSignature) { _ in
-                    relayout(size: geo.size)
+                    if pageIsActive { relayout(size: geo.size) }
+                }
+                .onChange(of: pageIsActive) { active in
+                    // 切回图谱页时如果数据在这期间变过，补一次布局；
+                    // 没变过就什么都不用做（坐标还在）。
+                    if active, signature != currentSignature {
+                        relayout(size: geo.size)
+                    }
                 }
             }
             .background(Theme.background.ignoresSafeArea())
@@ -68,6 +92,7 @@ struct GraphView: View {
                     } label: {
                         Image(systemName: "arrow.counterclockwise")
                     }
+                    .disabled(isLayouting)
                 }
             }
             .sheet(item: $selectedNote) { note in
@@ -126,7 +151,8 @@ struct GraphView: View {
                 }
 
                 if degree > 0 || scale > 1.1 {
-                    let label = truncated(note.displayTitle, limit: 7)
+                    // 标题在布局时算好，避免每次重绘都重新截断字符串
+                    let label = labels[note.id] ?? note.displayTitle
                     ctx.draw(
                         Text(label)
                             .font(.system(size: 9, weight: .medium))
@@ -243,14 +269,24 @@ struct GraphView: View {
             }
     }
 
+    /// MagnificationGesture 自 iOS 17 起被 MagnifyGesture 取代。
+    /// 部署目标是 16，所以按可用性分叉，再用 AnyGesture 把两边不同的 Value 类型抹平。
     private var magnificationGesture: some Gesture {
-        MagnificationGesture()
+        magnifyBase
             .onChanged { value in
                 scale = min(3.0, max(0.45, baseScale * value))
             }
             .onEnded { _ in
                 baseScale = scale
             }
+    }
+
+    private var magnifyBase: AnyGesture<CGFloat> {
+        if #available(iOS 17.0, *) {
+            return AnyGesture(MagnifyGesture().map { $0.magnification })
+        } else {
+            return AnyGesture(MagnificationGesture())
+        }
     }
 
     private func handleTap(at location: CGPoint, size: CGSize) {
@@ -281,18 +317,38 @@ struct GraphView: View {
 
     // MARK: - 布局
 
+    /// 力导向是 300 轮 × 全对排斥，n=300 时约 1350 万次浮点运算。
+    /// 原来在主线程同步跑，进图谱页会直接卡住一两帧以上；现在丢到后台算，
+    /// 算完再回主线程赋值，期间旧坐标继续显示，画面不闪。
     private func relayout(size: CGSize) {
         guard size.width > 10, size.height > 10, !store.notes.isEmpty else { return }
         let ids = store.notes.map { $0.id }
         let edges = store.links.map { ($0.a, $0.b) }
-        positions = ForceLayout.compute(ids: ids, edges: edges, size: size)
+        let titles = Dictionary(uniqueKeysWithValues: store.notes.map {
+            ($0.id, truncated($0.displayTitle, limit: 7))
+        })
 
         var counter: [UUID: Int] = [:]
         for link in store.links {
             counter[link.a, default: 0] += 1
             counter[link.b, default: 0] += 1
         }
-        degrees = counter
+
         signature = currentSignature
+        layoutToken &+= 1
+        let token = layoutToken
+        isLayouting = true
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = ForceLayout.compute(ids: ids, edges: edges, size: size)
+            DispatchQueue.main.async {
+                // 期间数据又变了就丢掉这次结果，等下一轮
+                guard token == layoutToken else { return }
+                positions = result
+                degrees = counter
+                labels = titles
+                isLayouting = false
+            }
+        }
     }
 }
