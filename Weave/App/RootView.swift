@@ -47,6 +47,8 @@ private struct TabPage: ViewModifier {
 
 private struct TabBar: View {
     @EnvironmentObject private var router: AppRouter
+    /// 长按采集的时刻：用来把长按之后的那次抬手判定成「不是点按」
+    @State private var lastLongPressAt: Date?
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
@@ -91,9 +93,14 @@ private struct TabBar: View {
 
     /// 中间的采集：实心圆略重一档，但选中/未选中颜色要拉开，
     /// 否则看不出当前在不在采集页
+    /// 点按 = 采集页（再点一次聚焦输入框）；长按 = 直接开始语音
     private var captureItem: some View {
         let selected = router.tab == .capture
         return Button {
+            // 长按刚触发过：这次抬手不算点按
+            if let t = lastLongPressAt, Date().timeIntervalSince(t) < 1.2 {
+                return
+            }
             router.select(.capture)
         } label: {
             VStack(spacing: 3) {
@@ -115,5 +122,12 @@ private struct TabBar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.45)
+                .onEnded { _ in
+                    lastLongPressAt = Date()
+                    router.openVoice()
+                }
+        )
     }
 }

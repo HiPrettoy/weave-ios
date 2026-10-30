@@ -5,6 +5,8 @@ struct CaptureView: View {
     @EnvironmentObject private var router: AppRouter
 
     @State private var draft = ""
+    /// 快记时用标签芯片挑中的标签
+    @State private var draftTags: [String] = []
     @State private var showVoice = false
     @State private var showPhoto = false
     @State private var showManual = false
@@ -28,6 +30,22 @@ struct CaptureView: View {
         let available = pageHeight - topBlockHeight - 40 - 32
         let fits = Int(available / rowHeight)
         return max(3, min(8, fits))
+    }
+
+    /// 已用过的标签，按使用次数从多到少排（常用的排前面）
+    private var popularTags: [TagUsage] {
+        var counts: [String: Int] = [:]
+        for note in store.notes {
+            for t in note.tags where !t.isEmpty {
+                counts[t, default: 0] += 1
+            }
+        }
+        return counts
+            .map { TagUsage(tag: $0.key, count: $0.value) }
+            .sorted { lhs, rhs in
+                if lhs.count != rhs.count { return lhs.count > rhs.count }
+                return lhs.tag < rhs.tag
+            }
     }
 
     private var recent: [Note] {
@@ -112,6 +130,11 @@ struct CaptureView: View {
             .onChange(of: router.cameraTick) { _ in
                 draftFocused = false
                 showPhoto = true
+            }
+            // 长按底部采集：直接进语音
+            .onChange(of: router.voiceTick) { _ in
+                draftFocused = false
+                showVoice = true
             }
             .onChange(of: router.tab) { newValue in
                 if newValue != .capture { draftFocused = false }
@@ -271,20 +294,93 @@ struct CaptureView: View {
                 }
                 .disabled(!canSave)
             }
+
+            if !draftTags.isEmpty || !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                tagPicker
+            }
         }
         .card(padding: 13)
+    }
+
+    /// 常用标签：已选中的排前面（实心），其余按使用次数排（描边 + 次数）
+    private var tagPicker: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 4) {
+                Image(systemName: "tag")
+                    .font(.system(size: 10))
+                Text("标签")
+                    .font(.caption2)
+                Spacer()
+                if !draftTags.isEmpty {
+                    Text("\(draftTags.count) 个已选")
+                        .font(.caption2)
+                }
+            }
+            .foregroundStyle(Theme.inkSoft)
+
+            if popularTags.isEmpty {
+                Text("还没有用过的标签，记下的笔记会自动带标签")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.inkSoft.opacity(0.85))
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(popularTags) { item in
+                            tagChip(item.tag, count: item.count)
+                        }
+                    }
+                    .padding(.vertical, 1)
+                    .padding(.horizontal, 1)
+                }
+            }
+        }
+    }
+
+    private func tagChip(_ tag: String, count: Int) -> some View {
+        let picked = draftTags.contains(tag)
+        return Button {
+            toggleTag(tag)
+        } label: {
+            HStack(spacing: 3) {
+                Text(tag)
+                    .font(.caption)
+                if count >= 2 && !picked {
+                    // 用过两次以上算「常用」，标个次数
+                    Text("\(count)")
+                        .font(.system(size: 9, weight: .semibold))
+                        .opacity(0.75)
+                }
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(picked ? Theme.accent : Theme.inkSoft.opacity(0.12)))
+            .foregroundStyle(picked ? Color.white : Theme.ink)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func toggleTag(_ tag: String) {
+        if let idx = draftTags.firstIndex(of: tag) {
+            draftTags.remove(at: idx)
+        } else {
+            draftTags.append(tag)
+        }
+        Haptics.tap()
     }
 
     private func saveDraft() {
         guard canSave else { return }
         let text = draft
+        let tags = draftTags
         draft = ""
+        draftTags = []
         // 存完就收起键盘：手机上这永远是最可靠的一条退路，
         // 顺便把下面的最近列表露出来，能立刻看到刚记下的那条。
         draftFocused = false
-        _ = store.add(content: text, source: .text)
+        _ = store.add(content: text, tags: tags, source: .text)
         Haptics.success()
-        showToast("已记下，正在建立关联")
+        showToast(tags.isEmpty ? "已记下，正在建立关联" : "已记下（\(tags.count) 个标签），正在建立关联")
     }
 
     // MARK: - 三种采集方式（语音放正中间）
@@ -440,4 +536,11 @@ private struct TopBlockHeightKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
     }
+}
+
+/// 标签使用统计：用于把「常用标签」按次数排序
+private struct TagUsage: Identifiable {
+    let tag: String
+    let count: Int
+    var id: String { tag }
 }

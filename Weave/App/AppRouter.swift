@@ -39,6 +39,7 @@ final class AppRouter: ObservableObject {
     @Published var captureFocusTick = 0
     @Published var searchFocusTick = 0
     @Published var cameraTick = 0
+    @Published var voiceTick = 0
 
     func select(_ target: AppTab) {
         if tab == target {
@@ -68,6 +69,13 @@ final class AppRouter: ObservableObject {
     /// 首页上滑
     func goLibrary() {
         tab = .library
+        Haptics.tap()
+    }
+
+    /// 长按采集按钮：直接开始语音
+    func openVoice() {
+        tab = .capture
+        voiceTick += 1
         Haptics.tap()
     }
 }
