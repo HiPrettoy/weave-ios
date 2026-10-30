@@ -2,15 +2,18 @@ import Foundation
 
 enum Exporter {
     static func markdown(notes: [Note], links: [NoteLink]) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        let formatter = Formatters.fullDate
+
+        // 先建 id → 笔记的字典。原来是在 links × notes 的双重循环里
+        // 用 first(where:) 线性查找，1000 条笔记导出要几百毫秒。
+        var byID: [UUID: Note] = [:]
+        byID.reserveCapacity(notes.count)
+        for note in notes { byID[note.id] = note }
 
         var relatedMap: [UUID: [Note]] = [:]
         for link in links {
-            for (owner, otherID) in [(link.a, link.b), (link.b, link.a)] {
-                guard let other = notes.first(where: { $0.id == otherID }) else { continue }
-                relatedMap[owner, default: []].append(other)
-            }
+            if let other = byID[link.a] { relatedMap[link.b, default: []].append(other) }
+            if let other = byID[link.b] { relatedMap[link.a, default: []].append(other) }
         }
 
         var output = "# 织识导出 · \(formatter.string(from: Date()))\n\n"

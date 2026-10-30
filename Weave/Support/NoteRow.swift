@@ -58,8 +58,7 @@ struct NoteRow: View {
         if interval < 86_400 { return "\(Int(interval / 3600))时前" }
         let days = Int(interval / 86_400)
         if days < 30 { return "\(days)天前" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "M/d"
-        return formatter.string(from: date)
+        // 原来这里每次都 new DateFormatter，滚动列表时每行每帧都付一次初始化成本
+        return Formatters.shortDate.string(from: date)
     }
 }

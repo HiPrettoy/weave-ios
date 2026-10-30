@@ -61,7 +61,13 @@ enum TextTokenizer {
             }
             if cjkBuffer.count >= 2 {
                 for index in 0..<(cjkBuffer.count - 1) {
-                    let bigram = String(cjkBuffer[index]) + String(cjkBuffer[index + 1])
+                    let left = String(cjkBuffer[index])
+                    let right = String(cjkBuffer[index + 1])
+                    let bigram = left + right
+                    // 两个字都是停用字时这个二元组也是噪音（「的了」「了是」之类）。
+                    // 停用词表里只有单字，不在这里拦一道，这类桶会被大量无关笔记共享，
+                    // 既占掉 512 维里的位置，又让「共享桶」这个候选信号失真。
+                    if cjkStopwords.contains(left), cjkStopwords.contains(right) { continue }
                     if !cjkStopwords.contains(bigram) {
                         output.append(bigram)
                     }

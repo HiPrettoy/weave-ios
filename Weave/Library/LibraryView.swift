@@ -12,6 +12,21 @@ struct LibraryView: View {
     @State private var semanticHits: [(Note, Double)] = []
     @FocusState private var searchFocused: Bool
 
+    /// 过滤结果与标签云的缓存。
+    /// 原来的 filtered / allTags 是计算属性，body 里被引用三次就整库排序过滤三次，
+    /// 每敲一个字都要重来一遍。现在按输入指纹缓存，命中就复用。
+    private final class DerivedCache {
+        var key: Int = 0
+        var valid = false
+        var filtered: [Note] = []
+        var tags: [String] = []
+    }
+
+    @State private var cache = DerivedCache()
+    /// 语义搜索的防抖句柄：原来每敲一个字都同步跑一遍全库余弦，
+    /// 输入长词时等于每键一次全库计算。现在停手 250ms 才真正搜。
+    @State private var semanticTask: Task<Void, Never>?
+
     enum Filter: String, CaseIterable, Identifiable {
         case all = "全部"
         case favorite = "收藏"
@@ -23,25 +38,30 @@ struct LibraryView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                searchBar
-                filterBar
-                tagBar
-                list
-            }
-            .background(Theme.background.ignoresSafeArea())
-            .navigationTitle("笔记")
-            .navigationBarTitleDisplayMode(.inline)
-            .onChange(of: query) { _ in
-                if semanticMode { runSemanticSearch() }
-            }
-            // 已经在笔记页时再点一次「笔记」：直接进入搜索状态
-            .onChange(of: router.searchFocusTick) { _ in
-                searchFocused = true
-            }
-            .onChange(of: router.tab) { newValue in
-                if newValue != .library { searchFocused = false }
-            }
+            content
+                .background(Theme.background.ignoresSafeArea())
+                .navigationTitle("笔记")
+                .navigationBarTitleDisplayMode(.inline)
+                .onChange(of: query) { _ in
+                    if semanticMode { runSemanticSearch() }
+                }
+                // 已经在笔记页时再点一次「笔记」：直接进入搜索状态
+                .onChange(of: router.searchFocusTick) { _ in
+                    searchFocused = true
+                }
+                .onChange(of: router.tab) { newValue in
+                    if newValue != .library { searchFocused = false }
+                }
+        }
+    }
+
+    private var content: some View {
+        let derived = derivedSnapshot()
+        return VStack(spacing: 0) {
+            searchBar
+            filterBar
+            tagBar(tags: derived.tags)
+            list(notes: derived.filtered)
         }
     }
 
@@ -97,6 +117,8 @@ struct LibraryView: View {
                 Button("取消") {
                     query = ""
                     semanticMode = false
+                    semanticTask?.cancel()
+                    semanticTask = nil
                     semanticHits = []
                     searchFocused = false
                 }
@@ -111,7 +133,7 @@ struct LibraryView: View {
 
     // MARK: - 列表
 
-    private var list: some View {
+    private func list(notes: [Note]) -> some View {
         List {
             if semanticMode && !semanticHits.isEmpty {
                 Section(header: Text("语义相关度排序").font(.caption)) {
@@ -132,7 +154,7 @@ struct LibraryView: View {
             }
 
             Section {
-                if filtered.isEmpty {
+                if notes.isEmpty {
                     Text(emptyMessage)
                         .font(.footnote)
                         .foregroundStyle(Theme.inkSoft)
@@ -140,7 +162,7 @@ struct LibraryView: View {
                         .frame(maxWidth: .infinity)
                         .listRowBackground(Color.clear)
                 } else {
-                    ForEach(filtered, id: \.id) { note in
+                    ForEach(notes, id: \.id) { note in
                         NavigationLink {
                             NoteDetailView(noteID: note.id)
                         } label: {
@@ -174,7 +196,7 @@ struct LibraryView: View {
                 HStack {
                     Text(semanticMode ? "全部笔记" : filter.rawValue)
                     Spacer()
-                    Text("\(filtered.count) 条")
+                    Text("\(notes.count) 条")
                 }
                 .font(.caption)
             }
@@ -219,7 +241,7 @@ struct LibraryView: View {
 
     // MARK: - 标签（多选）
 
-    private var tagBar: some View {
+    private func tagBar(tags: [String]) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 7) {
                 // 清除放在最前面：标签一多，横滑之后它就跑到看不见的地方去了
@@ -254,7 +276,7 @@ struct LibraryView: View {
                     .buttonStyle(.plain)
                 }
 
-                ForEach(allTags, id: \.self) { tag in
+                ForEach(tags, id: \.self) { tag in
                     let selected = selectedTags.contains(tag)
                     Button {
                         if selected {
@@ -281,7 +303,41 @@ struct LibraryView: View {
         }
     }
 
-    private var allTags: [String] {
+    // MARK: - 过滤与标签云（带缓存）
+
+    /// 输入指纹：只有它变了才重算过滤与标签云。
+    /// 用笔记 id + updatedAt 参与哈希，保证新增/编辑/删除都会让缓存失效，
+    /// 而滚动列表、切换焦点这类纯 UI 变化不会。
+    private func derivedKey() -> Int {
+        var hasher = Hasher()
+        hasher.combine(store.notes.count)
+        for note in store.notes {
+            hasher.combine(note.id)
+            hasher.combine(note.updatedAt)
+            hasher.combine(note.isFavorite)
+        }
+        hasher.combine(filter)
+        hasher.combine(trimmedQuery)
+        hasher.combine(tagMatchAll)
+        for tag in selectedTags.sorted() { hasher.combine(tag) }
+        return hasher.finalize()
+    }
+
+    private func derivedSnapshot() -> (filtered: [Note], tags: [String]) {
+        let key = derivedKey()
+        if cache.valid && cache.key == key {
+            return (cache.filtered, cache.tags)
+        }
+        let notes = computeFiltered()
+        let tags = computeAllTags()
+        cache.key = key
+        cache.valid = true
+        cache.filtered = notes
+        cache.tags = tags
+        return (notes, tags)
+    }
+
+    private func computeAllTags() -> [String] {
         var counter: [String: Int] = [:]
         for note in store.notes {
             for tag in note.tags { counter[tag, default: 0] += 1 }
@@ -291,9 +347,7 @@ struct LibraryView: View {
         }.map { $0.key }
     }
 
-    // MARK: - 过滤
-
-    private var filtered: [Note] {
+    private func computeFiltered() -> [Note] {
         var result = store.sortedNotes
         switch filter {
         case .all: break
@@ -322,9 +376,17 @@ struct LibraryView: View {
 
     private func runSemanticSearch() {
         guard semanticMode, !trimmedQuery.isEmpty else {
+            semanticTask?.cancel()
+            semanticTask = nil
             semanticHits = []
             return
         }
-        semanticHits = store.semanticSearch(trimmedQuery, limit: 10)
+        let needle = trimmedQuery
+        semanticTask?.cancel()
+        semanticTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled, semanticMode, trimmedQuery == needle else { return }
+            semanticHits = store.semanticSearch(needle, limit: 10)
+        }
     }
 }

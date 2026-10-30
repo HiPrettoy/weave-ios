@@ -157,7 +157,7 @@ struct ReviewView: View {
                 .font(.footnote)
                 .foregroundStyle(Theme.inkSoft)
 
-            if let next = store.cards.sorted(by: { $0.due < $1.due }).first, next.due > Date() {
+            if let next = store.cards.min(by: { $0.due < $1.due }), next.due > Date() {
                 Text("下一张：\(relative(next.due))")
                     .font(.caption)
                     .foregroundStyle(Theme.inkSoft)
