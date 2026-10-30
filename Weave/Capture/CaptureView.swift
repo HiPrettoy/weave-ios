@@ -166,7 +166,7 @@ struct CaptureView: View {
         // 量出上半部实际高度，供下面算能放几条笔记
         .background(
             GeometryReader { p in
-                Color.clear.preference(key: TopBlockHeightKey.self, value: p.height)
+                Color.clear.preference(key: TopBlockHeightKey.self, value: p.size.height)
             }
         )
     }
