@@ -42,48 +42,7 @@ struct CaptureView: View {
             // 其他页的标题紧贴状态栏（导航栏区域被内容占满），
             // 这里如果也从 safe area 下才开始排，顶部就会空出一大条
             GeometryReader { geo in
-                VStack(spacing: 0) {
-                    // 上半部固定不滚动
-                    VStack(alignment: .leading, spacing: 12) {
-                        header
-                        quickCapture
-                        if !draftFocused {
-                            methods
-                            swipeHint
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, headerTopInset(in: geo))
-                    .padding(.bottom, 10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .layoutPriority(1)
-                    // 量出上半部实际高度，供下面算能放几条笔记
-                    .background(
-                        GeometryReader { p in
-                            Color.clear.preference(key: TopBlockHeightKey.self, value: p.height)
-                        }
-                    )
-
-                    // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕。
-                    // 这里刻意不用 ScrollView：滚动手势会吞掉上滑进笔记的手势。
-                    if draftFocused {
-                        Spacer(minLength: 0)
-                    } else {
-                        recentSection
-                            .padding(.horizontal, 20)
-                            .padding(.top, 4)
-                            .padding(.bottom, 28)
-                    }
-
-                    Spacer(minLength: 0)
-                }
-                // 上滑/下滑手势挂在整页（含「最近记下的」列表）：
-                // 用 simultaneousGesture，和列表自身滚动、行点击都不冲突
-                .simultaneousGesture(swipe)
-                .onAppear { pageHeight = geo.size.height }
-                .onChange(of: geo.size.height) { newValue in
-                    pageHeight = newValue
-                }
+                captureBody(in: geo)
             }
             .ignoresSafeArea(.container, edges: .top)
             .onPreferenceChange(TopBlockHeightKey.self) { newValue in
@@ -158,6 +117,58 @@ struct CaptureView: View {
                 if newValue != .capture { draftFocused = false }
             }
         }
+    }
+
+    // MARK: - 页面骨架
+
+    /// 拆成独立函数，避免 body 的类型检查复杂到编译超时
+    private func captureBody(in geo: GeometryProxy) -> some View {
+        VStack(spacing: 0) {
+            topBlock(in: geo)
+
+            // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕。
+            // 这里刻意不用 ScrollView：滚动手势会吞掉上滑进笔记的手势。
+            if draftFocused {
+                Spacer(minLength: 0)
+            } else {
+                recentSection
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                    .padding(.bottom, 28)
+            }
+
+            Spacer(minLength: 0)
+        }
+        // 上滑/下滑手势挂在整页（含「最近记下的」列表）：
+        // 用 simultaneousGesture，和列表自身滚动、行点击都不冲突
+        .simultaneousGesture(swipe)
+        .onAppear { pageHeight = geo.size.height }
+        .onChange(of: geo.size.height) { newValue in
+            pageHeight = newValue
+        }
+    }
+
+    /// 上半部：标题 + 输入框 + 三入口 + 提示（固定不滚动）
+    private func topBlock(in geo: GeometryProxy) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            header
+            quickCapture
+            if !draftFocused {
+                methods
+                swipeHint
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, headerTopInset(in: geo))
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
+        // 量出上半部实际高度，供下面算能放几条笔记
+        .background(
+            GeometryReader { p in
+                Color.clear.preference(key: TopBlockHeightKey.self, value: p.height)
+            }
+        )
     }
 
     // MARK: - 沉浸式顶部
