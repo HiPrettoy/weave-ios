@@ -188,7 +188,9 @@ final class AppStore: ObservableObject {
         notes = []
         links = []
         cards = []
-        UserDefaults.standard.set(false, forKey: Prefs.seeded)
+        // 必须置 true：置 false 会让下一次 init 的「空库且未播种」判断成立，
+        // 用户清空数据后重启又被灌回 6 条示例（与 SeedData 的注释相反）。
+        UserDefaults.standard.set(true, forKey: Prefs.seeded)
         saveNow()
     }
 

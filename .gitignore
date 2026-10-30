@@ -6,9 +6,9 @@ build/
 DerivedData/
 
 # 本地构建产物/真机取证（含笔记数据，不入库）
-dist/
-dist[0-9]*/
-dist[0-9][0-9]/
+# 用 dist*/ 一条覆盖 dist、dist2…dist20；路径必须以 / 开头锚定仓库根，
+# 否则会误伤将来可能出现的 Weave/dist 之类子目录。
+/dist*/
 
 # XcodeGen 生成，不进仓库
 Weave.xcodeproj/
