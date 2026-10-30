@@ -7,6 +7,9 @@ struct CaptureView: View {
     @State private var draft = ""
     /// 快记时用标签芯片挑中的标签
     @State private var draftTags: [String] = []
+    /// 从 `weave://add?title=...` 带进来的标题（快捷指令可以顺手给个名）。
+    /// 采集页没有标题输入框，所以它只在这次保存时生效一次。
+    @State private var incomingTitle = ""
     /// 三个采集面板共用一个 item 型 sheet。
     /// 原来挂了三个 .sheet(isPresented:) 在同一个节点上，SwiftUI 只会保留最后一个，
     /// 别的情形下则出现「点了没反应」——同一节点只能有一个 presentation 生效。
@@ -15,6 +18,14 @@ struct CaptureView: View {
     @State private var toastTask: Task<Void, Never>?
     @State private var selectedNoteID: UUID?
     @State private var actionNote: Note?
+    /// 刚被删掉、还在撤销窗口里的那条笔记
+    @State private var pendingUndo: AppStore.DeletedBundle?
+    /// 「撤销」按钮是否该露出来。跟着删除一起出现，撤销或窗口到期就收回 ——
+    /// 不能只看 pendingUndo：撤销期里又记了一条，新提示不该带撤销按钮。
+    @State private var undoVisible = false
+    /// 撤销窗口自己的计时。生命周期与提示计时分开：提示随时可能被新消息顶掉，
+    /// 但「6 秒后清理图片」这件事不能被顶掉，否则图片文件会变成没人引用的孤儿。
+    @State private var undoTask: Task<Void, Never>?
     @FocusState private var draftFocused: Bool
 
     enum CaptureSheet: String, Identifiable {
@@ -141,14 +152,29 @@ struct CaptureView: View {
             }
             .overlay(alignment: .bottom) {
                 if let toast {
-                    Text(toast)
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Capsule().fill(Theme.scrim))
-                        .padding(.bottom, 18)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    HStack(spacing: 12) {
+                        Text(toast)
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(.white)
+                        // 删除之后给一次反悔的机会。采集页的「⋯ › 删除」原来是一按就没，
+                        // 详情页有确认框、这里没有 —— 真数据下太容易出事。
+                        if undoVisible {
+                            Button(String(localized: "撤销")) {
+                                undoDelete()
+                            }
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Color.white.opacity(0.22)))
+                            .accessibilityLabel(String(localized: "撤销删除"))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Capsule().fill(Theme.scrim))
+                    .padding(.bottom, 18)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             // 已经在采集页时再点一次「采集」：直接给输入框焦点、弹键盘
@@ -168,7 +194,26 @@ struct CaptureView: View {
             .onChange(of: router.tab) { newValue in
                 if newValue != .capture { draftFocused = false }
             }
+            // 从 weave://add?... 递进来的草稿：填进输入框等人确认，不直接落库
+            .onChange(of: router.pendingDraft) { incoming in
+                if let incoming { accept(incoming) }
+            }
+            .onAppear {
+                // 冷启动时 URL 可能比页面先到，那一次 onChange 收不到
+                if let incoming = router.pendingDraft { accept(incoming) }
+            }
         }
+    }
+
+    /// 把外部递进来的草稿填进输入框。用户按「记下来」才会真正入库 ——
+    /// 别的 App 递进来的内容不该绕过确认直接进笔记库。
+    private func accept(_ incoming: QuickAdd.Draft) {
+        draft = incoming.text
+        draftTags = incoming.tags
+        incomingTitle = incoming.title
+        router.pendingDraft = nil
+        draftFocused = true
+        showToast(String(localized: "已从链接收到内容，确认后按「记下来」"))
     }
 
     // MARK: - 页面骨架
@@ -407,16 +452,19 @@ struct CaptureView: View {
         guard canSave else { return }
         let text = draft
         let tags = draftTags
+        let title = incomingTitle
         draft = ""
         draftTags = []
+        incomingTitle = ""
         // 存完就收起键盘：手机上这永远是最可靠的一条退路，
         // 顺便把下面的最近列表露出来，能立刻看到刚记下的那条。
         draftFocused = false
         // add 会校验内容，失败时返回 nil。原来直接丢返回值再无条件弹「已记下」，
         // 用户会以为存住了、其实什么也没留下。
-        guard store.add(content: text, tags: tags, source: .text) != nil else {
+        guard store.add(content: text, title: title, tags: tags, source: .text) != nil else {
             draft = text
             draftTags = tags
+            incomingTitle = title
             Haptics.warning()
             showToast(String(localized: "这条没存下，内容已经放回输入框"))
             return
@@ -572,16 +620,52 @@ struct CaptureView: View {
     }
 
     private func delete(_ note: Note) {
-        store.delete(note)
-        showToast(String(localized: "已删除这条笔记"))
+        // 先记下「怎么装回去」再删。图片文件留在原地，撤销窗口过了才清。
+        let bundle = store.remove(note)
+        pendingUndo = bundle
+        undoVisible = true
+        Haptics.warning()
+        showToast(String(localized: "已删除这条笔记"), undoWindow: 6.0)
     }
 
-    private func showToast(_ message: String) {
+    private func undoDelete() {
+        guard let bundle = pendingUndo else { return }
+        undoTask?.cancel()
+        pendingUndo = nil
+        undoVisible = false
+        store.undoDelete(bundle)
+        Haptics.success()
+        showToast(String(localized: "已恢复这条笔记"))
+    }
+
+    /// 显示一条提示。`undoWindow` 给定时，提示里带一个「撤销」按钮，
+    /// 到期后自动把删除的图片真正清掉（笔记本身早就从库里移除了）。
+    private func showToast(_ message: String, undoWindow: TimeInterval? = nil) {
+        // 撤销窗口是独立的一条计时。它不能挂在提示计时上 —— 撤销期里用户又记了一条，
+        // 新提示会把旧计时取消掉，那条删除就永远等不到提交，图片文件成了孤儿。
+        if undoWindow == nil, let bundle = pendingUndo {
+            // 新提示顶掉撤销提示：这次删除立刻落定，免得「按钮消失了但窗口还开着」
+            undoTask?.cancel()
+            pendingUndo = nil
+            undoVisible = false
+            store.commitDeletion(bundle)
+        }
+        if let undoWindow {
+            undoTask?.cancel()
+            undoTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(undoWindow * 1_000_000_000))
+                guard !Task.isCancelled, let bundle = pendingUndo else { return }
+                pendingUndo = nil
+                undoVisible = false
+                store.commitDeletion(bundle)
+            }
+        }
         // 每次都取消上一个计时，否则连续保存时先前的计时会提前把新提示抹掉
         toastTask?.cancel()
         withAnimation(.easeOut(duration: 0.22)) { toast = message }
+        let duration = undoWindow ?? 1.6
         toastTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 1_600_000_000)
+            try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
             guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.2)) { toast = nil }
         }

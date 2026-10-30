@@ -344,13 +344,65 @@ final class AppStore: ObservableObject {
         scheduleSave()
     }
 
+    /// 直接删掉，不留撤销窗口。详情页有确认框，不需要反悔入口；
+    /// 采集页要撤销窗口，走 remove / undoDelete / commitDeletion。
     func delete(_ note: Note) {
-        if let path = note.imagePath { ImageStore.remove(path) }
+        let bundle = remove(note)
+        commitDeletion(bundle)
+    }
+
+    /// 删掉一条笔记，并把「怎么把它装回去」需要的东西一起交出来。
+    ///
+    /// 采集页的最近列表里「⋯ › 删除」是一按就没的，没有确认框。
+    /// 测试数据时无所谓，真数据下这就是事故 —— 所以删除返回一个可撤销的凭据，
+    /// 由界面层决定给多久的反悔时间。图片文件不进凭据（可能有 200KB+），
+    /// 只记文件名，撤销时文件还在原地就能直接用。
+    @discardableResult
+    func remove(_ note: Note) -> DeletedBundle {
+        let bundle = DeletedBundle(note: note,
+                                   card: card(for: note.id),
+                                   imagePath: note.imagePath)
+        // 图片先留着：撤销窗口内要能立刻拿回来。真正清理在 commitDeletion。
         notes.removeAll { $0.id == note.id }
         links.removeAll { $0.a == note.id || $0.b == note.id }
         cards.removeAll { $0.noteID == note.id }
         rebuildLinks()
         scheduleSave()
+        return bundle
+    }
+
+    /// 撤销一次删除。笔记、它的复习卡（含复习进度）一起回来。
+    /// 关联不用手动装回去 —— 下面的 rebuildLinks() 会按当前阈值重算，
+    /// 同一份数据算出来的边是确定的，撤销之后连到的还是那几条。
+    func undoDelete(_ bundle: DeletedBundle) {
+        guard !notes.contains(where: { $0.id == bundle.note.id }) else { return }
+        var note = bundle.note
+        // 图片文件还在就继续用；期间被别的路径清掉了就退化成无图笔记，正文不能丢
+        if let path = bundle.imagePath, ImageStore.exists(path) {
+            note.imagePath = path
+        } else {
+            note.imagePath = nil
+        }
+        note.embedding = []
+        notes.insert(note, at: 0)
+        if let card = bundle.card, !cards.contains(where: { $0.noteID == card.noteID }) {
+            cards.append(card)
+        }
+        rebuildLinks()
+        scheduleSave()
+    }
+
+    /// 撤销窗口过了，真的把图片删掉。
+    func commitDeletion(_ bundle: DeletedBundle) {
+        guard !notes.contains(where: { $0.id == bundle.note.id }) else { return }
+        if let path = bundle.imagePath { ImageStore.remove(path) }
+    }
+
+    /// 一次删除留下的凭据。只在内存里存在几秒，不落盘。
+    struct DeletedBundle {
+        var note: Note
+        var card: ReviewCard?
+        var imagePath: String?
     }
 
     func toggleFavorite(_ note: Note) {

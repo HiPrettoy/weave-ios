@@ -361,6 +361,16 @@
         }
       }
     },
+    "下次提醒：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next reminder: %@"
+          }
+        }
+      }
+    },
     "下滑直接拍照": {
       "localizations": {
         "en": {
@@ -875,6 +885,16 @@
         }
       }
     },
+    "只在有卡片到期的那一天提醒你 —— 没有东西要复习时不会打扰。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You only get pinged on days when something is actually due."
+          }
+        }
+      }
+    },
     "可以一起想起来": {
       "localizations": {
         "en": {
@@ -1075,6 +1095,16 @@
         }
       }
     },
+    "复习提醒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review reminder"
+          }
+        }
+      }
+    },
     "天后": {
       "localizations": {
         "en": {
@@ -1185,6 +1215,16 @@
         }
       }
     },
+    "已从链接收到内容，确认后按「记下来」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Content received from the link. Tap Save when you are ready."
+          }
+        }
+      }
+    },
     "已关闭": {
       "localizations": {
         "en": {
@@ -1243,6 +1283,16 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "已恢复这条笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note restored"
           }
         }
       }
@@ -1591,12 +1641,42 @@
         }
       }
     },
+    "提醒时间": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder time"
+          }
+        }
+      }
+    },
     "搜索模型名": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Search model names"
+          }
+        }
+      }
+    },
+    "撤销": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        }
+      }
+    },
+    "撤销删除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo delete"
           }
         }
       }
@@ -1757,6 +1837,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Moonshot, strong on long text"
+          }
+        }
+      }
+    },
+    "有 %lld 张卡片等着你，几分钟就能过完。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cards are waiting — takes a few minutes."
           }
         }
       }
@@ -1967,6 +2057,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rebuilding links…"
+          }
+        }
+      }
+    },
+    "每天提醒我复习": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remind me to review each day"
           }
         }
       }
@@ -2203,6 +2303,16 @@
         }
       }
     },
+    "现在没有到期的卡片，暂时不会提醒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is due right now, so there is no reminder yet."
+          }
+        }
+      }
+    },
     "生成 Markdown 导出": {
       "localizations": {
         "en": {
@@ -2373,6 +2483,16 @@
         }
       }
     },
+    "系统里没有给织识通知权限。到「设置 › 通知 › 织识」打开后再回来。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications are turned off for Weave. Enable them in Settings › Notifications › Weave."
+          }
+        }
+      }
+    },
     "织识": {
       "localizations": {
         "en": {
@@ -2479,6 +2599,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transcript appears below as you speak — you can edit it."
+          }
+        }
+      }
+    },
+    "该复习了": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time to review"
           }
         }
       }

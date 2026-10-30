@@ -123,6 +123,14 @@ struct ReviewView: View {
                     store.grade(card, grade: grade)
                     revealed = false
                     Haptics.tap()
+                    // 复习完一张，待复习数就变了 —— 顺手把提醒的数字改掉，
+                    // 否则通知里会一直说「有 3 张卡片」（其实已经清空了）。
+                    if Prefs.reminderEnabled {
+                        ReminderScheduler.reschedule(dueCount: store.dueCards.count,
+                                                     enabled: true,
+                                                     hour: Prefs.reminderHour,
+                                                     minute: Prefs.reminderMinute)
+                    }
                 } label: {
                     VStack(spacing: 3) {
                         Image(systemName: SRS.gradeSymbols[grade])

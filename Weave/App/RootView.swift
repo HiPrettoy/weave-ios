@@ -5,7 +5,9 @@ struct RootView: View {
     @EnvironmentObject private var store: AppStore
     @Environment(\.scenePhase) private var scenePhase
 
-    @StateObject private var router = AppRouter()
+    /// 路由对象由 WeaveApp 持有并注入 —— `onOpenURL` 也要往同一个实例里塞草稿，
+    /// 所以这里不能再自己 new 一个（那样外部链接递进来的东西会进到另一个对象里）。
+    @EnvironmentObject private var router: AppRouter
     /// 键盘弹起时把标签栏收走：采集页的输入框在底部，标签栏会正好压在键盘上方，
     /// 既挡住候选词条，又让「收起键盘」和「切页」两个操作抢同一块屏幕。
     @State private var keyboardVisible = false
@@ -38,7 +40,6 @@ struct RootView: View {
             }
             .animation(.easeOut(duration: 0.18), value: keyboardVisible)
         }
-        .environmentObject(router)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             keyboardVisible = true
         }
@@ -48,6 +49,14 @@ struct RootView: View {
         .onChange(of: scenePhase) { phase in
             if phase != .active {
                 store.saveNow()
+                // 切后台时按最新的到期数量重排一次提醒：
+                // 卡片可能刚被复习掉（那就该撤销通知），也可能刚新增。
+                if Prefs.reminderEnabled {
+                    ReminderScheduler.reschedule(dueCount: store.dueCards.count,
+                                                 enabled: true,
+                                                 hour: Prefs.reminderHour,
+                                                 minute: Prefs.reminderMinute)
+                }
             }
         }
     }

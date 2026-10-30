@@ -9,6 +9,12 @@ struct SettingsView: View {
     @AppStorage(Prefs.llmModel) private var llmModel = "deepseek-chat"
     @AppStorage(Prefs.linkThreshold) private var threshold = 0.18
     @AppStorage(Prefs.linkMaxPerNote) private var maxLinks = 6
+    /// 复习提醒：开关 + 每天几点。默认早上 9 点。
+    @AppStorage(Prefs.remindEnabled) private var remindEnabled = false
+    @AppStorage(Prefs.remindHour) private var remindHour = 9
+    @AppStorage(Prefs.remindMinute) private var remindMinute = 0
+    /// 用户点了「不允许通知」时给一条提示
+    @State private var reminderDenied = false
 
     /// Key 走 Keychain，不能再用 @AppStorage（那会明文写 UserDefaults）
     @State private var llmKey = ""
@@ -62,6 +68,47 @@ struct SettingsView: View {
         keySaveTask?.cancel()
         keySaveTask = nil
         LLMKeys.setAPIKey(llmKey)
+    }
+
+    // MARK: - 复习提醒
+
+    /// `DatePicker` 要一个 Date，但真正存的是「几点几分」两个 Int —— 拼一个今天的
+    /// 时间点给它，写回时只取 hour/minute。
+    private var reminderTime: Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(bySettingHour: remindHour,
+                                      minute: remindMinute,
+                                      second: 0,
+                                      of: Date()) ?? Date()
+            },
+            set: { newValue in
+                let parts = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                remindHour = parts.hour ?? 9
+                remindMinute = parts.minute ?? 0
+            }
+        )
+    }
+
+    /// 按当前待复习数量重排提醒。注意入参是**今天到期**的卡片数，不是全部卡片：
+    /// 没有东西要复习的那天不该响。
+    private func rescheduleReminder() {
+        guard remindEnabled else {
+            ReminderScheduler.cancel()
+            return
+        }
+        let scheduled = ReminderScheduler.reschedule(
+            dueCount: store.dueCards.count,
+            enabled: true,
+            hour: remindHour,
+            minute: remindMinute
+        )
+        if let scheduled {
+            status = String(localized: "下次提醒：\(Formatters.fullDate.string(from: scheduled))")
+        } else {
+            // 排不上不是出错：没有到期卡片时本来就该安静
+            status = String(localized: "现在没有到期的卡片，暂时不会提醒")
+        }
     }
 
     /// confirmationDialog 要一个 Bool 绑定，但真正决定内容的是被点中的那一项，
@@ -221,6 +268,36 @@ struct SettingsView: View {
                 } footer: {
                     Text("相似度 = 0.68×语义向量 + 0.22×标签重合 + 0.10×时间邻近。阈值越低，连得越多。")
                 }
+
+                Section {
+                    Toggle("每天提醒我复习", isOn: $remindEnabled)
+                    if remindEnabled {
+                        DatePicker("提醒时间",
+                                   selection: reminderTime,
+                                   displayedComponents: .hourAndMinute)
+                    }
+                } header: {
+                    Text("复习提醒")
+                } footer: {
+                    if reminderDenied {
+                        Text("系统里没有给织识通知权限。到「设置 › 通知 › 织识」打开后再回来。")
+                    } else {
+                        Text("只在有卡片到期的那一天提醒你 —— 没有东西要复习时不会打扰。")
+                    }
+                }
+                .onChange(of: remindEnabled) { on in
+                    if !on {
+                        ReminderScheduler.cancel()
+                        return
+                    }
+                    Task { @MainActor in
+                        let granted = await ReminderScheduler.requestAuthorization()
+                        reminderDenied = !granted
+                        if granted { rescheduleReminder() }
+                    }
+                }
+                .onChange(of: remindHour) { _ in rescheduleReminder() }
+                .onChange(of: remindMinute) { _ in rescheduleReminder() }
 
                 Section {
                     Toggle("启用云端增强", isOn: $llmEnabled)
@@ -456,6 +533,9 @@ struct SettingsView: View {
             .task {
                 if llmKey.isEmpty { llmKey = LLMKeys.apiKey }
                 backups = BackupStore.list()
+                // 进设置页时按最新的到期数量重排一次：卡片会被复习掉、也会新增，
+                // 只在开关动作时排的话，通知里的数字会一直停在旧值。
+                if remindEnabled { rescheduleReminder() }
             }
             .onDisappear {
                 flushKey()

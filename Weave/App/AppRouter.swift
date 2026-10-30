@@ -42,6 +42,9 @@ final class AppRouter: ObservableObject {
     @Published var searchFocusTick = 0
     @Published var cameraTick = 0
     @Published var voiceTick = 0
+    /// 从 `weave://` 递进来、还没被采集页取走的草稿。
+    /// 置空即表示已消费 —— 采集页读到它之后填进输入框再清掉。
+    @Published var pendingDraft: QuickAdd.Draft?
 
     func select(_ target: AppTab) {
         if tab == target {
@@ -79,5 +82,13 @@ final class AppRouter: ObservableObject {
         tab = .capture
         voiceTick += 1
         Haptics.tap()
+    }
+
+    /// 收到 `weave://add?...`：把草稿交给采集页，并切过去。
+    /// 不直接落库 —— 外部递进来的东西要先让人看一眼，按了「记下来」才算。
+    func accept(_ draft: QuickAdd.Draft) {
+        tab = .capture
+        pendingDraft = draft
+        Haptics.success()
     }
 }

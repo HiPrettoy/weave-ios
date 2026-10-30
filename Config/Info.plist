@@ -74,6 +74,20 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<!-- weave:// 是采集入口。快捷指令、书签、其他 App 都能把一段文字丢进来：
+	     weave://add?text=...&tags=学习,算法
+	     没有分享扩展也能用 —— 扩展要额外的 target 与签名，而 URL Scheme 是纯 App 内的事。 -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.weave.ios.quickadd</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>weave</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>织识需要相机权限，拍下书页、板书或屏幕，并提取其中的文字。</string>
 	<key>NSMicrophoneUsageDescription</key>

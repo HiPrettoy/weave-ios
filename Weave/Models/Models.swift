@@ -257,6 +257,10 @@ enum Prefs {
     static let llmModel = "weave.llmModel"
     static let llmKey = "weave.llmKey"
     static let seeded = "weave.seeded"
+    /// 复习提醒：开关 + 每天几点 + 已排到的卡片数（用来避免每次都重排）
+    static let remindEnabled = "weave.remindEnabled"
+    static let remindHour = "weave.remindHour"
+    static let remindMinute = "weave.remindMinute"
 
     static var threshold: Double {
         let stored = UserDefaults.standard.double(forKey: linkThreshold)
@@ -266,5 +270,20 @@ enum Prefs {
     static var maxLinksPerNote: Int {
         let stored = UserDefaults.standard.integer(forKey: linkMaxPerNote)
         return stored > 0 ? stored : 6
+    }
+
+    static var reminderEnabled: Bool {
+        UserDefaults.standard.bool(forKey: remindEnabled)
+    }
+
+    /// 默认早上 9 点。布尔量单独存，时/分缺省用 9:00。
+    static var reminderHour: Int {
+        UserDefaults.standard.object(forKey: remindHour) == nil
+            ? 9
+            : UserDefaults.standard.integer(forKey: remindHour)
+    }
+
+    static var reminderMinute: Int {
+        UserDefaults.standard.integer(forKey: remindMinute)
     }
 }
