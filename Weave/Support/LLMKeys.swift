@@ -81,7 +81,23 @@ enum LLMKeys {
     }
 
     static var apiKey: String {
-        UserDefaults.standard.string(forKey: Prefs.llmKey) ?? ""
+        if let stored = Keychain.string(forKey: Prefs.llmKey) {
+            return stored
+        }
+        // 从旧版本升上来时 Key 还躺在 UserDefaults 里，搬一次家并清掉明文
+        let legacy = UserDefaults.standard.string(forKey: Prefs.llmKey) ?? ""
+        guard !legacy.isEmpty else { return "" }
+        Keychain.set(legacy, forKey: Prefs.llmKey)
+        UserDefaults.standard.removeObject(forKey: Prefs.llmKey)
+        return legacy
+    }
+
+    /// 写 Key 的唯一入口：空串等于删除
+    static func setAPIKey(_ value: String) {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        Keychain.set(trimmed, forKey: Prefs.llmKey)
+        // 顺手清掉可能残留的明文副本
+        UserDefaults.standard.removeObject(forKey: Prefs.llmKey)
     }
 
     static var isEnabled: Bool {

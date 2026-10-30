@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>zh_CN</string>
+	<string>zh-Hans</string>
 	<key>CFBundleDisplayName</key>
 	<string>织识</string>
 	<key>CFBundleExecutable</key>
@@ -23,10 +23,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIColorName</key>
-		<string></string>
-	</dict>
+	<dict/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIStatusBarStyle</key>
@@ -45,6 +42,28 @@
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
+	</array>
+	<!-- 应用要把备份（.weave）交给「文件」App / 分享面板，
+	     需要声明成自己的文档类型，否则系统不知道拿什么 App 打开它。 -->
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>app.weave.backup</string>
+			<key>UTTypeDescription</key>
+			<string>织识备份</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>weave</string>
+				</array>
+			</dict>
+		</dict>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>织识需要相机权限，拍下书页、板书或屏幕，并提取其中的文字。</string>
