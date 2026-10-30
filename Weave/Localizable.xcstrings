@@ -71,6 +71,16 @@
         }
       }
     },
+    "%@，已选中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, selected"
+          }
+        }
+      }
+    },
     "%lld 个已选": {
       "localizations": {
         "en": {
@@ -841,6 +851,16 @@
         }
       }
     },
+    "备份失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup failed: %@"
+          }
+        }
+      }
+    },
     "备份已生成": {
       "localizations": {
         "en": {
@@ -941,6 +961,36 @@
         }
       }
     },
+    "存储文件损坏且没有可用备份，本次以空库启动。损坏的文件已另存为 %@。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The store file was corrupt and no usable backup exists, so this session starts with an empty library. The damaged file was saved as %@."
+          }
+        }
+      }
+    },
+    "存储文件损坏，已回退到上一次备份（%lld 条笔记）。损坏的文件已另存为 %@。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The store file was corrupt, so the previous backup was restored (%lld notes). The damaged file was saved as %@."
+          }
+        }
+      }
+    },
+    "存储文件读不出来，本次以空库启动。原文件保留在 Documents/%@。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The store file could not be read, so this session starts with an empty library. The original file is kept at Documents/%@."
+          }
+        }
+      }
+    },
     "导出": {
       "localizations": {
         "en": {
@@ -1011,6 +1061,16 @@
         }
       }
     },
+    "已恢复 %lld 条笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restored %lld notes"
+          }
+        }
+      }
+    },
     "已收藏": {
       "localizations": {
         "en": {
@@ -1057,6 +1117,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saved, building links"
+          }
+        }
+      }
+    },
+    "已重建：%lld 条关联": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld links rebuilt"
           }
         }
       }
@@ -1111,6 +1181,16 @@
         }
       }
     },
+    "录音启动失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not start recording: %@"
+          }
+        }
+      }
+    },
     "忘了": {
       "localizations": {
         "en": {
@@ -1127,6 +1207,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Good value; Chinese summaries are solid"
+          }
+        }
+      }
+    },
+    "恢复失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore failed: %@"
           }
         }
       }
@@ -1547,6 +1637,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Summarize"
+          }
+        }
+      }
+    },
+    "概括 / 概念 / 标签，走你在设置里选的「%@」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Summary, concepts and tags via %@ — chosen in Settings"
           }
         }
       }
@@ -2021,6 +2121,16 @@
         }
       }
     },
+    "节点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nodes"
+          }
+        }
+      }
+    },
     "被来电或其他 App 打断了，已经把识别到的内容保留下来": {
       "localizations": {
         "en": {
@@ -2241,6 +2351,16 @@
         }
       }
     },
+    "这个文件不是有效的备份：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is not a valid backup: %@"
+          }
+        }
+      }
+    },
     "这张图片读不出来，换一张试试": {
       "localizations": {
         "en": {
@@ -2267,6 +2387,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "This note no longer exists"
+          }
+        }
+      }
+    },
+    "连接失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection failed: %@"
+          }
+        }
+      }
+    },
+    "连接成功 · %lld ms · 模型回复「%@」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected · %lld ms · model replied “%@”"
+          }
+        }
+      }
+    },
+    "连线": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Links"
           }
         }
       }

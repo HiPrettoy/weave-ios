@@ -108,9 +108,10 @@ struct AIExtractPanel: View {
                 }
             }
 
+            // 三元表达式会退化成 String，Text 不再查本地化表，两条都得自己包一层
             Text(LLMKeys.isEnabled
-                 ? "概括 / 概念 / 标签，走你在设置里选的「\(LLMKeys.model)」"
-                 : "没开云端增强，到「设置」填 API Key 就能用")
+                 ? String(localized: "概括 / 概念 / 标签，走你在设置里选的「\(LLMKeys.model)」")
+                 : String(localized: "没开云端增强，到「设置」填 API Key 就能用"))
                 .font(.caption2)
                 .foregroundStyle(Theme.inkSoft)
                 .lineLimit(1)

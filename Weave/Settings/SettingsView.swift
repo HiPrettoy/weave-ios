@@ -64,7 +64,7 @@ struct SettingsView: View {
     private func handleRestore(_ result: Result<[URL], Error>) {
         switch result {
         case .failure(let error):
-            status = "恢复失败：\(error.localizedDescription)"
+            status = String(localized: "恢复失败：\(error.localizedDescription)")
         case .success(let urls):
             guard let url = urls.first else { return }
             // fileImporter 给的是沙箱外的 URL，必须先拿安全作用域访问权
@@ -75,11 +75,11 @@ struct SettingsView: View {
                 let count = try store.restore(from: data)
                 exportURL = nil
                 backupURL = nil
-                status = "已恢复 \(count) 条笔记"
+                status = String(localized: "已恢复 \(count) 条笔记")
                 Haptics.success()
             } catch {
                 // 解码失败时 store.restore 已经抛错并且没有改动任何数据
-                status = "这个文件不是有效的备份：\(error.localizedDescription)"
+                status = String(localized: "这个文件不是有效的备份：\(error.localizedDescription)")
             }
         }
     }
@@ -91,11 +91,11 @@ struct SettingsView: View {
         do {
             let result = try await LLMEnricher.probe(baseURL: llmBaseURL, apiKey: llmKey, model: llmModel)
             testPassed = true
-            testMessage = "连接成功 · \(result.latencyMs) ms · 模型回复「\(result.reply)」"
+            testMessage = String(localized: "连接成功 · \(result.latencyMs) ms · 模型回复「\(result.reply)」")
             Haptics.success()
         } catch {
             testPassed = false
-            testMessage = "连接失败：\(error.localizedDescription)"
+            testMessage = String(localized: "连接失败：\(error.localizedDescription)")
         }
         testing = false
     }
@@ -166,7 +166,7 @@ struct SettingsView: View {
                             // 先让上面的状态渲染出去，再开始算
                             try? await Task.sleep(nanoseconds: 50_000_000)
                             let count = store.rebuildLinks(threshold: threshold, maxPerNote: maxLinks)
-                            status = "已重建：\(count) 条关联"
+                            status = String(localized: "已重建：\(count) 条关联")
                             isRebuilding = false
                             Haptics.success()
                         }
@@ -274,7 +274,7 @@ struct SettingsView: View {
                             backupURL = try store.writeBackupFile()
                             status = String(localized: "备份已生成")
                         } catch {
-                            status = "备份失败：\(error.localizedDescription)"
+                            status = String(localized: "备份失败：\(error.localizedDescription)")
                         }
                     } label: {
                         Label("生成完整备份（.weave）", systemImage: "externaldrive.badge.timemachine")

@@ -114,7 +114,7 @@ final class AppStore: ObservableObject {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
 
         guard let data = try? Data(contentsOf: fileURL) else {
-            loadIssue = "存储文件读不出来，本次以空库启动。原文件保留在 Documents/\(fileURL.lastPathComponent)。"
+            loadIssue = String(localized: "存储文件读不出来，本次以空库启动。原文件保留在 Documents/\(fileURL.lastPathComponent)。")
             return
         }
 
@@ -143,11 +143,11 @@ final class AppStore: ObservableObject {
             notes = snapshot.notes
             links = snapshot.links
             cards = snapshot.cards
-            loadIssue = "存储文件损坏，已回退到上一次备份（\(snapshot.notes.count) 条笔记）。损坏的文件已另存为 \(quarantine.lastPathComponent)。"
+            loadIssue = String(localized: "存储文件损坏，已回退到上一次备份（\(snapshot.notes.count) 条笔记）。损坏的文件已另存为 \(quarantine.lastPathComponent)。")
             return
         }
 
-        loadIssue = "存储文件损坏且没有可用备份，本次以空库启动。损坏的文件已另存为 \(quarantine.lastPathComponent)。"
+        loadIssue = String(localized: "存储文件损坏且没有可用备份，本次以空库启动。损坏的文件已另存为 \(quarantine.lastPathComponent)。")
     }
 
     /// 读成功后刷新 .bak。放到 IO 队列上做，别让启动等一次整库复制。

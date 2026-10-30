@@ -209,7 +209,7 @@ final class SpeechService: ObservableObject, @unchecked Sendable {
             DispatchQueue.main.async { self.isRecording = true }
         } catch {
             DispatchQueue.main.async {
-                self.errorMessage = "录音启动失败：\(error.localizedDescription)"
+                self.errorMessage = String(localized: "录音启动失败：\(error.localizedDescription)")
             }
             stop()
         }

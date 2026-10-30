@@ -127,7 +127,9 @@ private struct TabBar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(selected ? "\(tab.title)，已选中" : tab.title)
+        // 「，已选中」不能拼在 tab.title 后面当普通字符串：
+        // 那样后缀永远不查表，英文界面会读成 "Review，已选中"。
+        .accessibilityLabel(selected ? String(localized: "\(tab.title)，已选中") : tab.title)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
