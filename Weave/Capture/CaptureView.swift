@@ -14,7 +14,9 @@ struct CaptureView: View {
     @FocusState private var draftFocused: Bool
 
     private var recent: [Note] {
-        Array(store.sortedNotes.prefix(5))
+        // 只放 3 条：这个区域不做成 ScrollView——iOS 16 上滚动会吞掉
+        // 父视图的拖动手势，「上滑进笔记」就废了；3 条正好一屏放下。
+        Array(store.sortedNotes.prefix(3))
     }
 
     var body: some View {
@@ -34,17 +36,15 @@ struct CaptureView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
 
-                // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕
+                // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕。
+                // 这里刻意不用 ScrollView：滚动手势会吞掉上滑进笔记的手势。
                 if draftFocused {
                     Spacer(minLength: 0)
                 } else {
-                    ScrollView {
-                        recentSection
-                            .padding(.horizontal, 20)
-                            .padding(.top, 4)
-                            .padding(.bottom, 28)
-                    }
-                    .scrollDismissesKeyboard(.interactively)
+                    recentSection
+                        .padding(.horizontal, 20)
+                        .padding(.top, 4)
+                        .padding(.bottom, 28)
                 }
             }
             // 上滑/下滑手势挂在整页（含「最近记下的」列表）：
@@ -331,6 +331,26 @@ struct CaptureView: View {
                         if index < recent.count - 1 {
                             Divider().opacity(0.4)
                         }
+                    }
+
+                    // 列表只展示最近 3 条，剩余的从这里进笔记页
+                    if store.notes.count > recent.count {
+                        Divider().opacity(0.4)
+                        Button {
+                            router.goLibrary()
+                        } label: {
+                            HStack {
+                                Text("查看全部 \(store.notes.count) 条")
+                                    .font(.footnote.weight(.medium))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .foregroundStyle(Theme.accent)
+                            .padding(.vertical, 10)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 16)
