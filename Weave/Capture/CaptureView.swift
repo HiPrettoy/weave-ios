@@ -13,10 +13,27 @@ struct CaptureView: View {
     @State private var actionNote: Note?
     @FocusState private var draftFocused: Bool
 
+    /// 上半部（标题+输入+三入口+提示）实测高度，用来算下方还能放几条
+    @State private var topBlockHeight: CGFloat = 0
+    /// 页面可用高度（已扣除底部标签栏与 Home 条）
+    @State private var pageHeight: CGFloat = 0
+
+    /// 每条笔记行约占的高度
+    private let rowHeight: CGFloat = 74
+
+    /// 最近列表放几条：按剩余空间自适应，高屏多放几条，不留大片空白
+    private var recentLimit: Int {
+        guard !store.sortedNotes.isEmpty else { return 3 }
+        // 可用高度 = 页面高 - 上半部 - 列表标题行 - 列表内外边距
+        let available = pageHeight - topBlockHeight - 40 - 32
+        let fits = Int(available / rowHeight)
+        return max(3, min(8, fits))
+    }
+
     private var recent: [Note] {
-        // 只放 3 条：这个区域不做成 ScrollView——iOS 16 上滚动会吞掉
-        // 父视图的拖动手势，「上滑进笔记」就废了；3 条正好一屏放下。
-        Array(store.sortedNotes.prefix(3))
+        // 这个区域不做成 ScrollView——iOS 16 上滚动会吞掉父视图的拖动手势，
+        // 「上滑进笔记」就废了；改成按屏幕高度决定放几条。
+        Array(store.sortedNotes.prefix(recentLimit))
     }
 
     var body: some View {
@@ -40,6 +57,12 @@ struct CaptureView: View {
                     .padding(.bottom, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .layoutPriority(1)
+                    // 量出上半部实际高度，供下面算能放几条笔记
+                    .background(
+                        GeometryReader { p in
+                            Color.clear.preference(key: TopBlockHeightKey.self, value: p.height)
+                        }
+                    )
 
                     // 键盘弹起时把下半部收起来，避免小屏机型上固定区域被顶出屏幕。
                     // 这里刻意不用 ScrollView：滚动手势会吞掉上滑进笔记的手势。
@@ -57,8 +80,15 @@ struct CaptureView: View {
                 // 上滑/下滑手势挂在整页（含「最近记下的」列表）：
                 // 用 simultaneousGesture，和列表自身滚动、行点击都不冲突
                 .simultaneousGesture(swipe)
+                .onAppear { pageHeight = geo.size.height }
+                .onChange(of: geo.size.height) { newValue in
+                    pageHeight = newValue
+                }
             }
             .ignoresSafeArea(.container, edges: .top)
+            .onPreferenceChange(TopBlockHeightKey.self) { newValue in
+                topBlockHeight = newValue
+            }
             .animation(.easeInOut(duration: 0.2), value: draftFocused)
             .background(Theme.background.ignoresSafeArea())
             .navigationBarHidden(true)
@@ -132,11 +162,11 @@ struct CaptureView: View {
 
     // MARK: - 沉浸式顶部
 
-    /// 顶部内边距 = 状态栏高度 - 12：标题只距状态栏文字约 12pt，
-    /// 消掉之前 safe area 下面整段空白。读不到高度时退回安全值。
+    /// 顶部内边距：让「织识」标题与状态栏文字之间留约 26pt 呼吸。
+    /// 实测 inset = status-12 时字形顶部距状态栏文字 13pt，偏贴，这里补 13pt。
     private func headerTopInset(in geo: GeometryProxy) -> CGFloat {
         let status = geo.safeAreaInsets.top
-        return status > 0 ? max(6, status - 12) : 34
+        return status > 0 ? status + 1 : 47
     }
 
     // MARK: - 手势
@@ -388,5 +418,15 @@ struct CaptureView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
             withAnimation(.easeOut(duration: 0.2)) { toast = nil }
         }
+    }
+}
+
+// MARK: - 测量
+
+/// 把上半部的实际高度传给父级，用于计算下方还能放几条笔记
+private struct TopBlockHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
