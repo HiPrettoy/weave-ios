@@ -31,6 +31,76 @@
         }
       }
     },
+    "%@ · 相似度 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · similarity %@"
+          }
+        }
+      }
+    },
+    "%@来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ source"
+          }
+        }
+      }
+    },
+    "%@，%@，相似度 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %@, similarity %@"
+          }
+        }
+      }
+    },
+    "%lld 个已选": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld selected"
+          }
+        }
+      }
+    },
+    "%lld 个节点，%lld 条连线，平均每条关联 %@ 个，当前缩放 %@ 倍": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld nodes, %lld links, avg %@ per node, zoom %@x"
+          }
+        }
+      }
+    },
+    "%lld 字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld characters"
+          }
+        }
+      }
+    },
+    "%lld 条": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld notes"
+          }
+        }
+      }
+    },
     "AI 增强（可选）": {
       "localizations": {
         "en": {
@@ -81,6 +151,26 @@
         }
       }
     },
+    "下一张：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: %@"
+          }
+        }
+      }
+    },
+    "下次复习：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next review: %@"
+          }
+        }
+      }
+    },
     "下滑直接拍照": {
       "localizations": {
         "en": {
@@ -107,6 +197,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "All clear for today"
+          }
+        }
+      }
+    },
+    "今日待复习 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due today: %lld"
           }
         }
       }
@@ -181,12 +281,32 @@
         }
       }
     },
+    "全部 %lld 条": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All %lld notes"
+          }
+        }
+      }
+    },
     "全部删除": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Delete everything"
+          }
+        }
+      }
+    },
+    "共 %lld 张卡片在排队": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cards queued"
           }
         }
       }
@@ -281,6 +401,16 @@
         }
       }
     },
+    "列表来自 %@ 的 /models 接口。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "List fetched from the /models endpoint at %@."
+          }
+        }
+      }
+    },
     "列表里没有？": {
       "localizations": {
         "en": {
@@ -297,6 +427,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete"
+          }
+        }
+      }
+    },
+    "删除标签 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove tag %@"
           }
         }
       }
@@ -367,6 +507,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Check the endpoint and API key, or type a model name instead."
+          }
+        }
+      }
+    },
+    "可用模型 %lld / %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available models %lld / %lld"
           }
         }
       }
@@ -537,6 +687,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Note deleted"
+          }
+        }
+      }
+    },
+    "已复习 %lld 次 · 遗忘 %lld 次 · 间隔 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reviewed %lld times · lapsed %lld times · interval %@"
           }
         }
       }
@@ -831,6 +991,16 @@
         }
       }
     },
+    "正在向 %@ 请求模型列表…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requesting the model list from %@…"
+          }
+        }
+      }
+    },
     "正在听…": {
       "localizations": {
         "en": {
@@ -847,6 +1017,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recognizing text…"
+          }
+        }
+      }
+    },
+    "每条最多关联 %lld 条": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At most %lld links per note"
           }
         }
       }
@@ -907,6 +1087,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Clear search"
+          }
+        }
+      }
+    },
+    "清除 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear %lld"
           }
         }
       }
@@ -991,6 +1181,16 @@
         }
       }
     },
+    "相关度 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relevance %@"
+          }
+        }
+      }
+    },
     "看答案": {
       "localizations": {
         "en": {
@@ -1027,6 +1227,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Notes, links and review progress will all be deleted. This cannot be undone."
+          }
+        }
+      }
+    },
+    "第 %lld 次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attempt %lld"
           }
         }
       }
