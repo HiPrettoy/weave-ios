@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import Weave
 
 /// 存储层的两处自研件：ZIP 读写与图片仓库的文件名护栏。
@@ -126,5 +127,125 @@ final class ImageStoreGuardTests: XCTestCase {
         let path = ImageStore.directory.path
         XCTAssertTrue(path.hasSuffix("/Images"), "图片目录应固定在 Documents/Images，实际：\(path)")
         XCTAssertFalse(path.contains("/tmp/"))
+    }
+}
+
+/// 备份导入是唯一会「整体替换用户数据」的路径，两个入口（新 zip / 老 JSON）都得走通。
+/// 真机上没法用合成事件驱动系统的文件选择器，所以这条链路只能靠这里的单测兜住。
+final class AppStoreRestoreTests: XCTestCase {
+
+    private var stores: [AppStore] = []
+
+    override func tearDown() {
+        // 每个用例用自己的空库，别污染模拟器里真正的 weave-store.json
+        for store in stores { store.wipeAll() }
+        stores = []
+        super.tearDown()
+    }
+
+    private func makeStore() -> AppStore {
+        let store = AppStore(filename: "test-restore-\(UUID().uuidString).json")
+        store.wipeAll()
+        stores.append(store)
+        return store
+    }
+
+    private func snapshotJSON(notes: [Note], links: [NoteLink] = [], cards: [ReviewCard] = []) throws -> Data {
+        // 用和 AppStore 一样的编码配置拼出清单文件
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let noteObjects = try JSONSerialization.jsonObject(with: encoder.encode(notes))
+        let linkObjects = try JSONSerialization.jsonObject(with: encoder.encode(links))
+        let cardObjects = try JSONSerialization.jsonObject(with: encoder.encode(cards))
+        let body: [String: Any] = [
+            "version": 2,
+            "notes": noteObjects,
+            "links": linkObjects,
+            "cards": cardObjects
+        ]
+        return try JSONSerialization.data(withJSONObject: body)
+    }
+
+    func testRestoreFromZipBringsBackNotesAndImages() throws {
+        let note = Note(title: "带图的笔记", content: "正文", tags: ["备份"])
+        let image = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03])
+        var noted = note
+        noted.imagePath = "\(note.id.uuidString).jpg"
+
+        let manifest = try snapshotJSON(notes: [noted],
+                                        links: [],
+                                        cards: [ReviewCard(noteID: note.id)])
+        let archive = ZipArchive.make([
+            ZipArchive.Entry(name: "weave-store.json", data: manifest),
+            ZipArchive.Entry(name: "Images/\(note.id.uuidString).jpg", data: image)
+        ])
+
+        let store = makeStore()
+        let count = try store.restore(from: archive)
+
+        XCTAssertEqual(count, 1)
+        XCTAssertEqual(store.notes.count, 1)
+        XCTAssertEqual(store.notes[0].title, "带图的笔记")
+        XCTAssertEqual(store.notes[0].imagePath, "\(note.id.uuidString).jpg")
+        XCTAssertTrue(ImageStore.exists("\(note.id.uuidString).jpg"), "备份里的图片要真的落到 Documents/Images")
+        XCTAssertEqual(store.cards.count, 1)
+    }
+
+    func testRestoreFromLegacyJSONMigratesInlineImage() throws {
+        // 老备份的形状得手写：现在的 Note.encode 已经不写 imageData 了，
+        // 用编码器造不出「旧版本导出的文件」，必须直接拼 JSON。
+        let id = UUID()
+        let png = try XCTUnwrap(UIImage(systemName: "photo")?.pngData(), "构造一张小图做样本")
+        let note: [String: Any] = [
+            "id": id.uuidString,
+            "title": "老笔记",
+            "content": "正文",
+            "tags": ["旧备份"],
+            "source": "photo",
+            "createdAt": "2026-10-01T10:00:00Z",
+            "updatedAt": "2026-10-01T10:00:00Z",
+            "summary": "",
+            "concepts": [],
+            "isFavorite": false,
+            "imageData": png.base64EncodedString()
+        ]
+        let legacyJSON = try JSONSerialization.data(withJSONObject: [
+            "version": 1,
+            "notes": [note],
+            "links": [],
+            "cards": [] as [Any]
+        ])
+
+        let store = makeStore()
+        let count = try store.restore(from: legacyJSON)
+
+        XCTAssertEqual(count, 1)
+        XCTAssertEqual(store.notes[0].id, id)
+        XCTAssertNil(store.notes[0].legacyImageData, "导入后内联图应已转成文件")
+        let path = try XCTUnwrap(store.notes[0].imagePath, "老备份里的图要能迁移成独立文件")
+        XCTAssertTrue(ImageStore.exists(path))
+        XCTAssertTrue(ImageStore.image(for: path) != nil, "迁移出的图片要能被读回来")
+    }
+
+    func testRestoreRejectsGarbage() {
+        let store = makeStore()
+        XCTAssertThrowsError(try store.restore(from: Data("这不是备份".utf8)))
+        XCTAssertThrowsError(try store.restore(from: Data(repeating: 0x00, count: 64)))
+    }
+
+    func testRestoreDropsOrphanLinksAndCards() throws {
+        // 备份里的关联/卡片指向了不存在的笔记：留着会让界面出现点不开的幽灵条目
+        let note = Note(title: "只剩一条", content: "正文")
+        let ghost = UUID()
+        let manifest = try snapshotJSON(
+            notes: [note],
+            links: [NoteLink(a: note.id, b: ghost, score: 0.5, kind: .semantic)],
+            cards: [ReviewCard(noteID: ghost)]
+        )
+        let store = makeStore()
+        _ = try store.restore(from: manifest)
+
+        XCTAssertTrue(store.links.isEmpty)
+        XCTAssertTrue(store.cards.isEmpty)
     }
 }
