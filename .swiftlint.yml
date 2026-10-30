@@ -1,0 +1,72 @@
+# SwiftLint 只作为「提示」接入 CI，不阻断构建（见 .github/workflows/ios.yml 的 lint job）。
+# 存量代码里还有 4000 多行没统一到全部规则，现在就当门禁用会让人一直在改格式。
+# 规则按「先抓真正的坑」排序：类型体过长、函数过长、强制解包、遗留 TODO。
+included:
+  - Weave
+  - WeaveTests
+
+excluded:
+  - build
+  - dist*
+  - .build
+
+# 放宽一些默认阈值，否则每个视图文件都会报错
+line_length:
+  warning: 160
+  error: 240
+  ignores_comments: true
+  ignores_urls: true
+
+file_length:
+  warning: 700
+  error: 1000
+
+type_body_length:
+  warning: 400
+  error: 600
+
+function_body_length:
+  warning: 90
+  error: 160
+
+cyclomatic_complexity:
+  warning: 20
+  error: 30
+
+identifier_name:
+  min_length:
+    warning: 1
+  max_length:
+    warning: 60
+  excluded:
+    - id
+    - a
+    - b
+    - x
+    - y
+    - i
+    - j
+
+disabled_rules:
+  # 中文文案与代码混排，这些规则误报率高
+  - trailing_whitespace
+  - todo
+  # 视图里大量短闭包，强制换行反而更难读
+  - multiple_closures_with_trailing_closure
+  - opening_brace
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - first_where
+  - force_unwrapping
+  - redundant_nil_coalescing
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+
+# force_unwrapping 是 opt-in 规则，这里显式降到 warning
+force_unwrapping:
+  severity: warning
+
+analyzer_rules:
+  - unused_import

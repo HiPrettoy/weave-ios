@@ -4,6 +4,10 @@ on:
   push:
     branches: [ main, master ]
     tags: [ 'v*' ]
+  # 合并之前就跑一遍：原来唯一的闸门是推上去之后，编译错误要等 CI 失败才发现，
+  # 于是 master 上经常出现「红的」提交（历史上有两次就是 CaptureView 编译错误）。
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
     inputs:
       version:
@@ -20,8 +24,64 @@ permissions:
   contents: read
 
 jobs:
+  # 单测跑在模拟器上，比 archive 快得多，所以放在前面：
+  # 逻辑错误在 1 分钟内就能看到，不用等 40 分钟的打包。
+  test:
+    name: Unit tests
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Run tests
+        run: |
+          set -o pipefail
+          # 先列出可用模拟器，设备名变了（Apple 每代换名字）时日志里能直接看到该改成什么
+          xcrun simctl list devices available | sed -n '1,40p'
+          xcodebuild test \
+            -project Weave.xcodeproj \
+            -scheme Weave \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO
+
+  # 风格检查只报告不拦路：存量代码还没清理完，
+  # 现在就把 warning 当 error 会让所有人都在修格式而不是写功能。
+  lint:
+    name: SwiftLint (advisory)
+    runs-on: macos-15
+    timeout-minutes: 15
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: |
+          if ! command -v swiftlint >/dev/null 2>&1; then
+            brew install swiftlint
+          fi
+          swiftlint version
+
+      - name: Lint
+        run: swiftlint lint --quiet --reporter github-actions-logging
+
   build:
     name: Archive & package
+    needs: test
     runs-on: macos-15
     timeout-minutes: 40
 
@@ -119,6 +179,9 @@ jobs:
           echo "name=Weave-v${VERSION}.ipa" >> "$GITHUB_OUTPUT"
 
       - name: Upload IPA
+        # PR 只验证「编得过」，不产出安装包：既省 artifact 配额，
+        # 也避免把未发版的包当成可分发产物。
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: weave-unsigned-ipa

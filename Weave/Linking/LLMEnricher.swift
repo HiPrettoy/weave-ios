@@ -25,9 +25,19 @@ enum LLMEnricher {
             switch self {
             case .missingKey: return "还没填 API Key"
             case .badURL: return "接口地址格式不对"
-            case .http(let code, let body): return "接口返回 \(code)：\(body.prefix(120))"
-            case .emptyResponse(let detail): return "无法解析返回内容：\(detail.prefix(120))"
+            case .http(let code, let body): return "接口返回 \(code)：\(Self.brief(body))"
+            case .emptyResponse(let detail): return "无法解析返回内容：\(Self.brief(detail))"
             }
+        }
+
+        /// 把响应体压成一行再截断。原样塞进错误提示会把整页 HTML 错误页
+        /// 铺到界面上，既看不明白又把界面撑坏。
+        private static func brief(_ body: String) -> String {
+            let flattened = body
+                .replacingOccurrences(of: "\r", with: " ")
+                .replacingOccurrences(of: "\n", with: " ")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return flattened.count > 120 ? String(flattened.prefix(120)) + "…" : flattened
         }
     }
 
@@ -188,6 +198,9 @@ enum LLMEnricher {
         let body: [String: Any] = [
             "model": model.isEmpty ? "deepseek-chat" : model,
             "temperature": 0.2,
+            // 顺带限一下输出长度：原来没设，个别服务会一直往下写，
+            // 45 秒超时白等，还按 token 计费。
+            "max_tokens": 400,
             "messages": [
                 ["role": "system", "content": system],
                 ["role": "user", "content": user]
@@ -219,11 +232,12 @@ enum LLMEnricher {
             .replacingOccurrences(of: "```", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard let start = cleaned.firstIndex(of: "{"),
-              let end = cleaned.lastIndex(of: "}"),
-              start < end,
-              let data = String(cleaned[start...end]).data(using: .utf8),
-              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        // 先整体当 JSON 解一次：模型规规矩矩输出时这一步就命中，最省事。
+        // 解不出来再退回「找第一个完整平衡的大括号对象」——
+        // 原来的做法是取「第一个 { 到最后一个 }」，如果模型在 JSON 前后
+        // 又补了说明文字（里面带大括号），切出来的就是一段非法字符串。
+        let object = decodeObject(cleaned) ?? firstBalancedObject(in: cleaned)
+        guard let object else {
             return Enrichment(summary: "", concepts: [], tags: [])
         }
 
@@ -231,5 +245,53 @@ enum LLMEnricher {
         let concepts = (object["concepts"] as? [Any])?.compactMap { $0 as? String } ?? []
         let tags = (object["tags"] as? [Any])?.compactMap { $0 as? String } ?? []
         return Enrichment(summary: summary, concepts: concepts, tags: tags)
+    }
+
+    private static func decodeObject(_ text: String) -> [String: Any]? {
+        guard let data = text.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return object
+    }
+
+    /// 从头扫一遍，找第一个括号配平的完整 JSON 对象（字符串内的括号不算）
+    private static func firstBalancedObject(in text: String) -> [String: Any]? {
+        var depth = 0
+        var start: String.Index?
+        var inString = false
+        var escaped = false
+
+        for index in text.indices {
+            let character = text[index]
+            if inString {
+                if escaped {
+                    escaped = false
+                } else if character == "\\" {
+                    escaped = true
+                } else if character == "\"" {
+                    inString = false
+                }
+                continue
+            }
+            switch character {
+            case "\"":
+                inString = true
+            case "{":
+                if depth == 0 { start = index }
+                depth += 1
+            case "}":
+                guard depth > 0 else { continue }
+                depth -= 1
+                if depth == 0, let begin = start {
+                    let slice = String(text[begin...index])
+                    start = nil
+                    if let object = decodeObject(slice) { return object }
+                }
+            default:
+                continue
+            }
+        }
+        return nil
     }
 }

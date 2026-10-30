@@ -37,9 +37,10 @@ D:\DSH\weave-ios/
 ├── scripts/build_ipa.sh        ← 有 Mac 时的本地打包脚本
 ├── scripts/mock_llm.py         ← 本地 mock OpenAI 服务（测「在线模型」「AI 提炼」用）
 ├── scripts/make_icon.py        ← 生成 App 图标
-├── .github/workflows/ios.yml   ← 云端 CI：出未签名 IPA artifact
+├── .github/workflows/ios.yml   ← 云端 CI：单测 + 打包未签名 IPA + 推 tag 自动发 Release
+├── .swiftlint.yml              ← SwiftLint 规则（CI 里只提示不拦路）
 ├── docs/shots/                 ← README 用的截图
-├── dist*/                      ← 本地构建产物与真机取证（已 gitignore）
+├── dist*/                      ← 本地构建产物与真机取证（**已被 /dist*/ 忽略，且不再被 git 跟踪**）
 └── Weave/
     ├── App/
     │   ├── WeaveApp.swift      ← @main，注入 AppStore
@@ -183,15 +184,20 @@ gh run download <run-id> -n weave-unsigned-ipa -D ./dist20
 ```
 
 CI（`.github/workflows/ios.yml`，跑在 `macos-15`）做的事：
-`brew install xcodegen` → `xcodegen generate` → `xcodebuild archive`（**未签名**，
-`CODE_SIGNING_ALLOWED=NO`）→ 把 `.app` 塞进 `Payload/` → `zip` 成 `Weave-v1.0.20.ipa` → 上传 artifact。
+`xcodegen generate` → `xcodebuild test`（模拟器上跑 `WeaveTests`）→
+`xcodebuild archive`（**未签名**，`CODE_SIGNING_ALLOWED=NO`）→ 校验版本号 →
+把 `.app` 塞进 `Payload/` → `zip` 成 `Weave-v<版本>.ipa` → 上传 artifact。
 
-> ⚠️ **CI 只出 artifact，不自动建 Release。** 需要 Release 的话手动补：
-> ```bash
-> gh release create v1.0.20 ./dist20/Weave-v1.0.20.ipa \
->   --title "织识 Weave v1.0.20（未签名 IPA）" --notes "改动摘要"
-> ```
-> 历史上 v1.0.11 / v1.0.12 就因为只跑了 CI 没建 Release，导致用户在 Release 页找不到新版。
+> **版本号只有一个真源：`project.yml` 的 `MARKETING_VERSION`。**
+> CI 会断言「产物里的 `CFBundleShortVersionString`」＝「project.yml 声明的值」＝
+> 「tag 名去掉 v」三者一致，任何一处对不上直接失败。
+> 所以发版就是：改 `project.yml` 的版本 → 提交 → `git tag vX.Y.Z && git push --tags`。
+
+> ✅ **推 tag 会自动建 Release。** `release` job 在 `refs/tags/v*` 上触发，
+> 下载刚打好的 IPA 并发布，标题为「织识 Weave vX.Y.Z（未签名 IPA）」。
+> 不再需要手动 `gh release create`——历史上 v1.0.2、v1.0.4~v1.0.9、v1.0.11、
+> v1.0.13、v1.0.14 就是因为靠手动建而漏掉，Release 页上一直是断的。
+> 需要补历史版本时仍可手动：`gh release create v1.0.14 ./dist14/xxx.ipa`。
 
 ### 3.2 装到真机
 
@@ -241,7 +247,7 @@ python scripts/mock_llm.py     # 监听 0.0.0.0:8899
 ```
 
 - `GET /v1/models` → 返回 `mock-alpha` / `mock-beta` / `mock-gamma`
-- `POST /v1/chat/completions` → 若 user 消息含「可用」两个字就回「可用」（供「测试连接」用），
+- `POST /v1/chat/completions` → 若 user 消息含「只回复两个字」就回「可用」（供「测试连接」用），
   否则回一段固定的 `{summary, concepts, tags}` JSON
 
 App 里填接口地址 `http://<本机局域网IP>:8899/v1`、随便填个 Key 即可测试。
@@ -254,10 +260,13 @@ App 里填接口地址 `http://<本机局域网IP>:8899/v1`、随便填个 Key �
 ```bash
 brew install xcodegen
 xcodegen generate && open Weave.xcodeproj   # 直接调
-./scripts/build_ipa.sh 1.0.20                 # 或出 IPA
+./scripts/build_ipa.sh                       # 或出 IPA（版本号读 project.yml）
+xcodebuild test -project Weave.xcodeproj -scheme Weave \
+  -destination 'platform=iOS Simulator,name=iPhone 16'   # 跑单测
 ```
 
 `.xcodeproj` 是生成物，**不入库**。改了 `project.yml` 必须重新 `xcodegen generate`。
+`build_ipa.sh` 不再接受版本号参数：版本只有一个来源，脚本会断言产物与 `project.yml` 一致。
 
 ---
 
@@ -312,32 +321,45 @@ xcodegen generate && open Weave.xcodeproj   # 直接调
 |---|---|
 | ios-mcp 长按参数 | 是 `seconds`，不是 `duration` |
 | 扫描脚本写死图片路径 | 会产生「修改无效」的假象 |
-| Release 漏建 | CI 只出 artifact，Release 要手动 `gh release create` |
+| Release 漏建 | ~~CI 只出 artifact，要手动 `gh release create`~~ 已修：推 tag 自动发版 |
+| `git rm --cached` 猜目录名 | `dist2`/`dist11`~`dist20` 从来没被跟踪过，`git rm` 遇到不存在的 pathspec 会整体中止。只对 `git ls-files` 真列出来的路径下手 |
+| 修完 `.gitignore` 不等于已停止跟踪 | 忽略规则对已入库的文件无效，必须先 `git rm -r --cached` |
 
 ---
 
-## 7. 建议的技术债处理顺序
+## 7. 技术债现状（2026-10 这一轮之后）
 
-如果要给这个项目提速或重构，**按这个顺序**做，收益从大到小：
+原来的「三步走」里第 1 步和第 2 步的核心已经做掉了，这里记录改动落点，
+避免后来者重复劳动或者把已经修好的东西又写回去。
 
-**第 1 步：修 O(n²)（纯内存算法优化，不动存储格式、不动 UI，风险最低、收益最大）**
-- `AutoLinker.build`：只让「新笔记 / 变更笔记」跟候选集比，而不是整库两两比；
-  或用倒排索引（按 token 倒排）先剪枝候选，再算余弦
-- `AppStore.related(to:)`：用 `notesByID` 字典替掉 `notes.first(where:)`
-- `AppStore.note(id:)`：同上
-- 内层循环的 `Set(left.tags.map { $0.lowercased() })` 提到循环外预计算
+**已修：关联重建从 O(n²) 降到 O(n·桶大小)**
+- `AutoLinker.build` 改成倒排剪枝：每条笔记取权重最高的 16 个哈希桶建 `postings`，
+  只有共享桶的才成为候选对；标签另建 `byTag` 索引兜底（标签是用户手打的，比哈希碰撞可信）。
+- 每对只打分一次并双向记账；每条笔记各自取前 `maxPerNote` 条再全局去重 ——
+  原来的单向 `seen` 会让先入库的笔记占满配额，后面的连不到东西。
+- 桶与标签都按 key 排序后遍历，保证同一份数据重算两次得到同样的边。
 
-**第 2 步：把 `imageData` 从 JSON 里挪出去**
-图片存 `Documents/Images/<uuid>.jpg`，JSON 里只存路径。
-现在一张 1600px JPEG 压完约 250KB，base64 进 JSON 后膨胀到约 330KB —— **这一步能把 JSON 体积砍掉两个数量级，收益比换 SQLite 还大**。
+**已修：索引与派生值**
+- `AppStore` 加 `noteIndex` / `cardIndex`（脏标记 + 懒重建），`note(id:)`、`card(for:)`、
+  `related(to:)` 不再线性扫描；`updateWithoutTouch`、`linkCount`、`degree` 等死代码清掉。
+- 整库语料 `SemanticCorpus` 缓存在 `AppStore.corpus`，语义检索不再每敲一个字就重新分词全库；
+  查询向量与笔记向量现在用**同一个** `CorpusIndex` 生成（旧实现混用新旧 IDF，分数没有意义）。
+- `LibraryView` / `CaptureView` 的过滤结果与常用标签按内容指纹缓存；
+  `Formatters` 统一了 DateFormatter（原来每次渲染都 new 一个）。
 
-**第 3 步：才考虑 SQLite**
-SQLite 只解决「按条增量写」和「按 id 索引查找」，**解决不了第 1 步的 O(n²)**。
-真要上，裸 `sqlite3` C API 在 iOS 16 上是系统自带、零依赖的（`import SQLite3`），
-不需要 Core Data 也不需要第三方 ORM。但要付出：数据访问层 + schema 迁移 + 线程隔离（sqlite3 C API 不是 Sendable）。
-三张表（notes / links / cards），没有分页、没有复杂查询、没有并发多写 —— SQLite 的价值目前还没兑现。
+**仍是「有意为之」的取舍**
+- 持久化还是一份 JSON。`imageData` 仍在 JSON 里 —— **第 2 步（图片外置到 Documents/Images）还没做**，
+  它现在是 JSON 体积的大头（一张 1600px JPEG ≈ 250KB，base64 后 ≈ 330KB）。
+- 仍然不引入 SQLite：JSON 全量写在几百到几千条量级够用，
+  收益要等到「按条增量写」真的成为瓶颈时才兑现。
+- 图谱力导向仍是全对排斥（300 轮），但已经挪到后台队列，且隐藏页不再触发重算。
+  节点上千时会慢，这是已知边界。
 
-**注意**：`Note.embedding` 是 512 维向量，SQLite 原生也不擅长向量检索（真要做得引 sqlite-vec 之类扩展，那又回到「引入依赖」）。
+**测试**
+- `WeaveTests` 覆盖分词语义、向量与余弦、连边规则（含 `maxPerNote` 对称性、去重、空笔记）、
+  语义检索的坐标系校验、SM-2 调度、Markdown 导出、LLM 的 URL 拼接与 JSON 抽取。
+- 运行：`xcodebuild test -project Weave.xcodeproj -scheme Weave -destination 'platform=iOS Simulator,name=iPhone 16'`，
+  CI 的 `test` job 会自动跑。
 
 ---
 
@@ -345,18 +367,19 @@ SQLite 只解决「按条增量写」和「按 id 索引查找」，**解决不�
 
 ```bash
 # 本地提交
-git add -A && git commit -m "feat: xxx (1.0.20)" && git push origin master
+git add -A && git commit -m "feat: xxx" && git push origin master
+
+# 发版（推 tag 会自动建 Release，不用再手动 gh release create）
+#   1) 先改 project.yml 的 MARKETING_VERSION
+#   2) git commit -am "chore: 版本号升到 1.0.20"
+#   3) git tag v1.0.20 && git push --tags
 
 # CI 状态
 gh run list --limit 5
 gh run watch <run-id>
 
-# 下载 IPA
+# 下载 IPA（PR 不产 artifact，只有 push/tag 才有）
 gh run download <run-id> -n weave-unsigned-ipa -D ./dist20
-
-# 建 Release
-gh release create v1.0.20 ./dist20/Weave-v1.0.20.ipa \
-  --title "织识 Weave v1.0.20（未签名 IPA）" --notes "..."
 
 # 设备
 node "D:\DSH\Cliplt\tools\iosmcp.mjs" info

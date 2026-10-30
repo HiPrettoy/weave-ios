@@ -74,20 +74,23 @@ score = 0.68 × cos(向量a, 向量b)
 推到 GitHub 后，`.github/workflows/ios.yml` 会在 `macos-15` 上：
 
 1. 装 `xcodegen`，从 `project.yml` 生成 `Weave.xcodeproj`
-2. `xcodebuild archive` 出 **未签名** 的 `.xcarchive`
-3. 把 `Weave.app` 塞进 `Payload/`，打成 `Weave-v1.0.0.ipa`
-4. 上传 artifact
+2. 在模拟器上跑 `WeaveTests` 单测（PR 也会跑，所以编译错误在合并前就能看到）
+3. `xcodebuild archive` 出 **未签名** 的 `.xcarchive`
+4. 校验版本号：产物 = `project.yml` 的 `MARKETING_VERSION` = tag 名
+5. 把 `Weave.app` 塞进 `Payload/`，打成 `Weave-v<版本>.ipa`
+6. 上传 artifact；**推 tag 时自动建 Release**
 
-在 Actions 页面下载 `weave-unsigned-ipa` 即可。
+在 Actions 页面下载 `weave-unsigned-ipa` 即可（PR 构建不产 artifact）。
 
 ### 本地（有 Mac + Xcode）
 
 ```bash
 brew install xcodegen
-./scripts/build_ipa.sh 1.0.0
+./scripts/build_ipa.sh     # 版本号读 project.yml，不用也不能手传
 ```
 
 或者直接 `xcodegen generate && open Weave.xcodeproj` 用 Xcode 调试。
+跑单测：`xcodebuild test -project Weave.xcodeproj -scheme Weave -destination 'platform=iOS Simulator,name=iPhone 16'`。
 
 ## 装到手机上
 
@@ -106,7 +109,7 @@ brew install xcodegen
 # 手机与电脑同一局域网
 python -m http.server 8000
 # 手机 Safari 打开，通过 TrollStore 的 URL 安装
-# apple-magnifier://install?url=http%3A%2F%2F<你的局域网IP>%3A8000%2FWeave-v1.0.1.ipa
+# apple-magnifier://install?url=http%3A%2F%2F<你的局域网IP>%3A8000%2FWeave-v1.0.19.ipa
 ```
 
 > 注意：`ldid` 伪签名 + `dpkg` 装进 `/var/jb/Applications` 虽然能启动，
@@ -119,20 +122,22 @@ python -m http.server 8000
 Weave/
   App/          WeaveApp、RootView（五个 Tab）
   Models/       Note / NoteLink / ReviewCard（纯 Codable 值类型）
-  Support/      AppStore（唯一数据源）、Theme、Exporter、SeedData、ImageTool
+  Support/      AppStore（唯一数据源）、Theme、Exporter、SeedData、ImageTool、
+                Keychain（API Key）、Formatters（共享日期格式）
   Capture/      文字 / 语音（Speech）/ 拍照（Vision OCR）
   Linking/      分词、向量化、自动关联、LLM 增强
   Graph/        力导向布局 + Canvas 绘制
   Library/      列表、搜索、详情
   Review/       SM-2、复习界面
-  Settings/     关联参数、AI 配置、导出、清库
+  Settings/     关联参数、AI 配置、备份恢复、导出、清库
+WeaveTests/     单元测试（分词 / 连边 / 检索 / SRS / 导出 / LLM 解析）
 Config/Info.plist
 Assets/Assets.xcassets
 project.yml     XcodeGen 配置（工程文件不入库）
 ```
 
 > **要接手这个项目，请先读 [`HANDOVER.md`](HANDOVER.md)** —— 里面有完整的数据流、
-> 一次迭代的标准流程（改代码 → 出 IPA → 装真机 → 验证）、历史踩坑清单，以及技术债的处理顺序。
+> 一次迭代的标准流程（改代码 → 出 IPA → 装真机 → 验证）、历史踩坑清单，以及技术债现状。
 
 ## 参考过的开源项目
 
@@ -144,13 +149,15 @@ project.yml     XcodeGen 配置（工程文件不入库）
 - [`luisangel2895/neurova`](https://github.com/luisangel2895/neurova) — SwiftUI + 端上 OCR + 间隔重复的组合
 - [`cutd/Anki-Flashcards-Pro`](https://github.com/cutd/Anki-Flashcards-Pro) — Anki 兼容的 SRS 调度实现
 
-## 真机验证记录（v1.0.7）
+## 真机验证记录
 
-iPhone（iOS 16.7.16，rootless 越狱）经 TrollStore Lite 安装后逐项走查：
+iPhone（iOS 16.7.16，rootless 越狱）经 TrollStore Lite 安装后逐项走查。
+下表是最后一次性完整走查（v1.0.7）的结果；之后各版的改动都经 CI 编译与单测验证，
+但没再逐条重录真机清单——真机验证纪律见 `HANDOVER.md` §3.3。
 
 | 项目 | 结果 |
 |---|---|
-| 安装与启动 | 未签名 IPA 经 TrollStore 安装，版本校验 1.0.7 通过 |
+| 安装与启动 | 未签名 IPA 经 TrollStore 安装，版本校验通过 |
 | 文字采集 → 自动关联 | 新增一条笔记后，关联数 8→10，自动连上 2 条既有笔记（相似度 0.41 / 0.24）|
 | 语音实时转写 | 麦克风 + `SFSpeechRecognizer` 正常，实时出字、波形动画；停止后文字保留不丢 |
 | 拍照 | 点「拍照」不再进中转页，直接落到系统相机；取消后停在拍照页，可改「从相册选」|
@@ -166,11 +173,14 @@ iPhone（iOS 16.7.16，rootless 越狱）经 TrollStore Lite 安装后逐项走�
 
 ## 已知限制
 
-- 语音转写单段约 1 分钟，长录音需要分段（系统 `SFSpeechRecognizer` 的限制）
+- 语音转写受 `SFSpeechRecognizer` 单段时长约束（约 1 分钟），本项目**没有做自动分段**；
+  超时后系统会停下来，把已识别的内容留在输入框里，可以接着再录一段
 - 关联是「词面」相似度，不是真正的语义模型。同义不同词（如「滤波」与「filter」）需要靠 AI 增强补齐
-- 全量 JSON 写入，笔记量到几万条会明显变慢；那时应该换 SQLite
-- 图谱布局一次性算完，节点上千时会卡；目前按几十到几百个节点设计
-- 没有 iCloud 同步，换设备靠导出 Markdown
+- 持久化仍是一份全量 JSON（`Documents/weave-store.json`）。笔记量大时每次保存要整库编码；
+  按条增量写与图片外置是下一步，详见 `HANDOVER.md` §7
+- 图片仍以 base64 存在 JSON 里，一张 1600px JPEG 会让文件多出约 330KB —— 这是 JSON 体积的大头
+- 图谱力导向仍是全对排斥，节点上千时会慢；已经挪到后台算，且不在图谱页时不重算
+- 没有 iCloud 同步，换设备用「备份与恢复」里的 `.weave` 文件
 
 ## License
 

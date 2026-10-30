@@ -11,10 +11,13 @@ settings:
   base:
     SWIFT_VERSION: "5.9"
     IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    # 先按 minimal 收集警告，把现存问题清完之后再升级到 complete（见 HANDOVER §7）。
+    # 直接开 complete 在 iOS 16 的大量非 Sendable 系统 API 上会淹没真正的错误。
     SWIFT_STRICT_CONCURRENCY: minimal
+    # 没有 script build phase，这个开关只影响 Xcode 自己跑脚本时的沙箱，
+    # 关掉是为了将来接 SwiftLint 的 Run Script 时不用再改一次。
     ENABLE_USER_SCRIPT_SANDBOXING: NO
     DEVELOPMENT_LANGUAGE: zh-Hans
-    ENABLE_BITCODE: NO
     CLANG_ENABLE_MODULES: YES
 
 targets:
@@ -32,8 +35,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.weave.ios
         PRODUCT_NAME: Weave
+        # 版本号的唯一真源：CI 会断言产物版本、tag 名都与这里一致（见 .github/workflows/ios.yml）。
         MARKETING_VERSION: "1.0.19"
         CURRENT_PROJECT_VERSION: "20"
+        # 只发 iPhone；Info.plist 里为 iPad 留的横屏声明因此不会生效。
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_FILE: Config/Info.plist
         GENERATE_INFOPLIST_FILE: NO
@@ -41,3 +46,42 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_STYLE: Automatic
         SWIFT_EMIT_LOC_STRINGS: YES
+      configs:
+        Debug:
+          # 测试要 @testable import Weave，必须打开可测性
+          ENABLE_TESTABILITY: YES
+
+  WeaveTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: WeaveTests
+        excludes:
+          - "**/.DS_Store"
+    dependencies:
+      - target: Weave
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.weave.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+        # 显式指定宿主 App：@testable import 需要从 App 的二进制里加载符号，
+        # 光靠 target 依赖在部分 XcodeGen 版本上不会自动补这两个设置。
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Weave.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Weave"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
+schemes:
+  Weave:
+    build:
+      targets:
+        Weave: all
+        WeaveTests: [ test ]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - WeaveTests
+    archive:
+      config: Release
