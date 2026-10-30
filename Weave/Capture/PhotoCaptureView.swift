@@ -223,7 +223,7 @@ struct PhotoCaptureView: View {
                let picked = UIImage(data: data) {
                 await handle(picked)
             } else {
-                hint = "这张图片读不出来，换一张试试"
+                hint = String(localized: "这张图片读不出来，换一张试试")
             }
             // 取完就清空选择：否则再选同一张图时 itemIdentifier 没变，
             // onChange 不触发，界面看起来就是「点了没反应」。
@@ -244,10 +244,10 @@ struct PhotoCaptureView: View {
         let recognized = await OCRService.recognize(in: picked)
         isRecognizing = false
         if recognized.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            hint = "没识别到文字。可以自己补一句描述，图片会一起存下来。"
+            hint = String(localized: "没识别到文字。可以自己补一句描述，图片会一起存下来。")
         } else {
             text = recognized
-            hint = "识别完成，可以再改一改"
+            hint = String(localized: "识别完成，可以再改一改")
         }
     }
 
@@ -262,7 +262,7 @@ struct PhotoCaptureView: View {
                         summary: ai.summary,
                         concepts: ai.concepts) != nil else {
             Haptics.warning()
-            hint = "没有正文也没有图片，这条没能存下"
+            hint = String(localized: "没有正文也没有图片，这条没能存下")
             return
         }
         Haptics.success()

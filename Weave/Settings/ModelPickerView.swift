@@ -122,7 +122,7 @@ struct ModelPickerView: View {
 
     private var hostText: String {
         guard let url = URL(string: baseURL.trimmingCharacters(in: .whitespacesAndNewlines)),
-              let host = url.host else { return "这个地址" }
+              let host = url.host else { return String(localized: "这个地址") }
         return host
     }
 

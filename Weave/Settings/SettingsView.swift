@@ -161,7 +161,7 @@ struct SettingsView: View {
                         // O(n·桶大小)，几百条笔记是几十毫秒级；这里给一个「正在重建」
                         // 状态，主要是让点击有即时反馈，而不是让界面看起来没反应。
                         isRebuilding = true
-                        status = "正在重建关联…"
+                        status = String(localized: "正在重建关联…")
                         Task { @MainActor in
                             // 先让上面的状态渲染出去，再开始算
                             try? await Task.sleep(nanoseconds: 50_000_000)
@@ -171,7 +171,7 @@ struct SettingsView: View {
                             Haptics.success()
                         }
                     } label: {
-                        Label(isRebuilding ? "正在重建…" : "按当前参数重建关联",
+                        Label(isRebuilding ? String(localized: "正在重建…") : String(localized: "按当前参数重建关联"),
                               systemImage: "arrow.triangle.2.circlepath")
                     }
                     .disabled(isRebuilding)
@@ -237,7 +237,7 @@ struct SettingsView: View {
                         HStack {
                             Text("在线模型")
                             Spacer()
-                            Text(llmModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "点这里获取" : llmModel)
+                            Text(llmModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? String(localized: "点这里获取") : llmModel)
                                 .font(.footnote.monospaced())
                                 .foregroundStyle(Theme.inkSoft)
                                 .lineLimit(1)
@@ -272,7 +272,7 @@ struct SettingsView: View {
                     Button {
                         do {
                             backupURL = try store.writeBackupFile()
-                            status = "备份已生成"
+                            status = String(localized: "备份已生成")
                         } catch {
                             status = "备份失败：\(error.localizedDescription)"
                         }
@@ -314,7 +314,7 @@ struct SettingsView: View {
                                 Exporter.markdown(notes: notes, links: links)
                             }.value
                             exportURL = Exporter.writeTemporaryFile(content: markdown)
-                            status = exportURL == nil ? "导出失败" : "已生成导出文件"
+                            status = exportURL == nil ? String(localized: "导出失败") : String(localized: "已生成导出文件")
                             isExporting = false
                         }
                     } label: {
@@ -394,7 +394,7 @@ struct SettingsView: View {
             .confirmationDialog("恢复示例数据？", isPresented: $confirmSeed, titleVisibility: .visible) {
                 Button("恢复（会覆盖现有笔记）", role: .destructive) {
                     store.resetToSeed()
-                    status = "示例数据已恢复"
+                    status = String(localized: "示例数据已恢复")
                 }
                 Button("取消", role: .cancel) {}
             }
@@ -417,7 +417,7 @@ struct SettingsView: View {
                 Button("全部删除", role: .destructive) {
                     store.wipeAll()
                     exportURL = nil
-                    status = "已清空"
+                    status = String(localized: "已清空")
                 }
                 Button("取消", role: .cancel) {}
             } message: {

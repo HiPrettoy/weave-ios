@@ -185,9 +185,9 @@ struct GraphView: View {
 
     private var statsBar: some View {
         HStack(spacing: 14) {
-            statItem("\(store.notes.count)", "节点")
-            statItem("\(store.links.count)", "连线")
-            statItem(String(format: "%.1f", averageDegree), "平均关联")
+            statItem("\(store.notes.count)", String(localized: "节点"))
+            statItem("\(store.links.count)", String(localized: "连线"))
+            statItem(String(format: "%.1f", averageDegree), String(localized: "平均关联"))
             Spacer()
             Text(String(format: "x%.1f", scale))
                 .font(.caption2.monospacedDigit())
@@ -222,10 +222,10 @@ struct GraphView: View {
 
     private var legend: some View {
         HStack(spacing: 12) {
-            legendItem("文字", Theme.accent)
-            legendItem("语音", Color(uiColor: .systemBlue))
-            legendItem("拍照", Theme.warm)
-            legendItem("手记", Color(uiColor: .systemIndigo))
+            legendItem(String(localized: "文字"), Theme.accent)
+            legendItem(String(localized: "语音"), Color(uiColor: .systemBlue))
+            legendItem(String(localized: "拍照"), Theme.warm)
+            legendItem(String(localized: "手记"), Color(uiColor: .systemIndigo))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)

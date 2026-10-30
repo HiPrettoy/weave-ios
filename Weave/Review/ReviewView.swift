@@ -140,7 +140,7 @@ struct ReviewView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(SRS.grades[grade])
-                .accessibilityHint(grade == 0 ? "间隔会重置，稍后再出现" : "按记忆程度推进下次复习时间")
+                .accessibilityHint(grade == 0 ? String(localized: "间隔会重置，稍后再出现") : String(localized: "按记忆程度推进下次复习时间"))
             }
         }
         .padding(.horizontal, 20)
@@ -171,9 +171,13 @@ struct ReviewView: View {
 
     private func relative(_ date: Date) -> String {
         let interval = date.timeIntervalSinceNow
-        if interval <= 0 { return "现在" }
-        if interval < 3600 { return "\(Int(interval / 60)) 分钟后" }
-        if interval < 86_400 { return "\(Int(interval / 3600)) 小时后" }
-        return "\(Int(interval / 86_400)) 天后"
+        if interval <= 0 { return String(localized: "现在") }
+        if interval < 3600 {
+            return String(localized: "\(Int(interval / 60)) 分钟后")
+        }
+        if interval < 86_400 {
+            return String(localized: "\(Int(interval / 3600)) 小时后")
+        }
+        return String(localized: "\(Int(interval / 86_400)) 天后")
     }
 }

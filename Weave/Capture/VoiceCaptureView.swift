@@ -122,14 +122,14 @@ struct VoiceCaptureView: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(speech.isRecording ? "停止录音" : "开始录音")
+        .accessibilityLabel(speech.isRecording ? String(localized: "停止录音") : String(localized: "开始录音"))
         .accessibilityHint("识别结果会实时出现在下方，可以直接编辑")
     }
 
     private var transcriptBox: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(speech.isRecording ? "正在听…" : "转写结果（可编辑）")
+                Text(speech.isRecording ? String(localized: "正在听…") : String(localized: "转写结果（可编辑）"))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.inkSoft)
                 Spacer()

@@ -16,26 +16,33 @@ enum Exporter {
             if let other = byID[link.b] { relatedMap[link.a, default: []].append(other) }
         }
 
-        var output = "# 织识导出 · \(formatter.string(from: Date()))\n\n"
-        output += "共 \(notes.count) 条笔记，\(links.count) 条关联。\n\n"
+        var output = String(localized: "# 织识导出 · \(formatter.string(from: Date()))", comment: "Markdown export header")
+        output += "\n\n"
+        output += String(localized: "共 \(notes.count) 条笔记，\(links.count) 条关联。", comment: "Markdown export summary line")
+        output += "\n\n"
 
         for note in notes.sorted(by: { $0.createdAt > $1.createdAt }) {
             output += "## \(note.fullTitle)\n\n"
-            output += "- 时间：\(formatter.string(from: note.createdAt))\n"
-            output += "- 来源：\(note.source.label)\n"
+            output += String(localized: "- 时间：\(formatter.string(from: note.createdAt))")
+            output += "\n"
+            output += String(localized: "- 来源：\(note.source.label)")
+            output += "\n"
             if !note.tags.isEmpty {
-                output += "- 标签：\(note.tags.map { "#\($0)" }.joined(separator: " "))\n"
+                output += String(localized: "- 标签：\(note.tags.map { "#\($0)" }.joined(separator: " "))")
+                output += "\n"
             }
             if !note.summary.isEmpty {
-                output += "- 摘要：\(note.summary)\n"
+                output += String(localized: "- 摘要：\(note.summary)")
+                output += "\n"
             }
             if !note.concepts.isEmpty {
-                output += "- 概念：\(note.concepts.joined(separator: "、"))\n"
+                output += String(localized: "- 概念：\(note.concepts.joined(separator: "、"))")
+                output += "\n"
             }
             output += "\n\(note.content)\n\n"
 
             if let related = relatedMap[note.id], !related.isEmpty {
-                output += "关联："
+                output += String(localized: "关联：")
                 output += related.prefix(6).map { "[[\($0.fullTitle)]]" }.joined(separator: " ")
                 output += "\n\n"
             }

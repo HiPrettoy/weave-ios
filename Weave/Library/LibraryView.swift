@@ -28,12 +28,23 @@ struct LibraryView: View {
     @State private var semanticTask: Task<Void, Never>?
 
     enum Filter: String, CaseIterable, Identifiable {
-        case all = "全部"
-        case favorite = "收藏"
-        case voice = "语音"
-        case photo = "拍照"
-        case manual = "手记"
+        case all, favorite, voice, photo, manual
+
         var id: String { rawValue }
+
+        /// 筛选条上的文字。
+        ///
+        /// 原来把中文直接写进 rawValue，`Text(filter.rawValue)` 收到的是 String，
+        /// 不会去查本地化表，切英文后这几颗胶囊还是中文。
+        var title: String {
+            switch self {
+            case .all: return String(localized: "全部")
+            case .favorite: return String(localized: "收藏")
+            case .voice: return String(localized: "语音")
+            case .photo: return String(localized: "拍照")
+            case .manual: return String(localized: "手记")
+            }
+        }
     }
 
     var body: some View {
@@ -113,7 +124,7 @@ struct LibraryView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("语义排序")
-                .accessibilityValue(semanticMode ? "已开启" : "已关闭")
+                .accessibilityValue(semanticMode ? String(localized: "已开启") : String(localized: "已关闭"))
                 .accessibilityHint("打开后按文本含义而不是字面匹配排序")
             }
 
@@ -179,7 +190,7 @@ struct LibraryView: View {
                                 store.toggleFavorite(note)
                                 Haptics.tap()
                             } label: {
-                                Label(note.isFavorite ? "取消收藏" : "收藏",
+                                Label(note.isFavorite ? String(localized: "取消收藏") : String(localized: "收藏"),
                                       systemImage: note.isFavorite ? "star.slash" : "star")
                             }
                             .tint(Theme.warm)
@@ -199,7 +210,7 @@ struct LibraryView: View {
                 }
             } header: {
                 HStack {
-                    Text(semanticMode ? "全部笔记" : filter.rawValue)
+                    Text(semanticMode ? String(localized: "全部笔记") : filter.title)
                     Spacer()
                     Text("\(notes.count) 条")
                 }
@@ -212,9 +223,9 @@ struct LibraryView: View {
     }
 
     private var emptyMessage: String {
-        if !selectedTags.isEmpty { return "没有同时命中这些标签的笔记" }
-        if !trimmedQuery.isEmpty { return "没有匹配的笔记" }
-        return "还没有笔记"
+        if !selectedTags.isEmpty { return String(localized: "没有同时命中这些标签的笔记") }
+        if !trimmedQuery.isEmpty { return String(localized: "没有匹配的笔记") }
+        return String(localized: "还没有笔记")
     }
 
     // MARK: - 来源筛选条
@@ -227,7 +238,7 @@ struct LibraryView: View {
                         filter = item
                         Haptics.tap()
                     } label: {
-                        Text(item.rawValue)
+                        Text(item.title)
                             .font(.footnote.weight(.medium))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
@@ -270,7 +281,7 @@ struct LibraryView: View {
                         tagMatchAll.toggle()
                         Haptics.tap()
                     } label: {
-                        Label(tagMatchAll ? "同时满足" : "任一匹配",
+                        Label(tagMatchAll ? String(localized: "同时满足") : String(localized: "任一匹配"),
                               systemImage: tagMatchAll ? "checkmark.circle.fill" : "circle.circle")
                             .font(.caption2.weight(.semibold))
                             .padding(.horizontal, 10)

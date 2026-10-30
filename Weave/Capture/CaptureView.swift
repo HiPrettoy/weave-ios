@@ -127,7 +127,7 @@ struct CaptureView: View {
                 set: { if !$0 { actionNote = nil } }
             ), titleVisibility: .visible) {
                 if let note = actionNote {
-                    Button(note.isFavorite ? "取消收藏" : "收藏") {
+                    Button(note.isFavorite ? String(localized: "取消收藏") : String(localized: "收藏")) {
                         store.toggleFavorite(note)
                         Haptics.tap()
                         actionNote = nil
@@ -285,7 +285,7 @@ struct CaptureView: View {
         // 顶部只留 safe area，不再额外加内边距，消掉标题上方的空白
     }
 
-    private func statPill(_ value: String, _ label: String) -> some View {
+    private func statPill(_ value: String, _ label: LocalizedStringKey) -> some View {
         HStack(spacing: 4) {
             Text(value).font(.footnote.weight(.semibold)).foregroundStyle(Theme.accent)
             Text(label).font(.footnote).foregroundStyle(Theme.inkSoft)

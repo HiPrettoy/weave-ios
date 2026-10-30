@@ -170,7 +170,7 @@ private struct TabBar: View {
                 }
         )
         // 长按开语音是纯手势，VoiceOver 用户摸不到，用自定义动作补上
-        .accessibilityLabel(selected ? "采集，已选中" : "采集")
+        .accessibilityLabel(selected ? String(localized: "采集，已选中") : String(localized: "采集"))
         .accessibilityAddTraits(selected ? [.isSelected] : [])
         .accessibilityHint("点按进入采集页")
         .accessibilityAction(named: "开始语音输入") {

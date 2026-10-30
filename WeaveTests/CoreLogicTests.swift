@@ -59,12 +59,14 @@ final class SRSReviewTests: XCTestCase {
     }
 
     func testHumanizedPhrases() {
-        XCTAssertEqual(SRS.humanized(0), "现在")
-        XCTAssertEqual(SRS.humanized(1), "1 天后")
-        XCTAssertEqual(SRS.humanized(40), "1 个月后")
-        // 不足一小时（1/24 天）说「马上」，一小时到一天之间才按分钟算
-        XCTAssertEqual(SRS.humanized(0.01), "马上")
-        XCTAssertTrue(SRS.humanized(0.5).contains("分钟"))
+        XCTAssertEqual(SRS.humanized(0), String(localized: "现在"))
+        XCTAssertEqual(SRS.humanized(1), String(localized: "1 天后"))
+        XCTAssertEqual(SRS.humanized(40), String(localized: "1 个月后"))
+        // 不足一小时（1/24 天）说「马上」，一小时到一天之间才按分钟算。
+        // 这里断数字不断「分钟」：换成英文是 "720 minutes later"，
+        // 断中文词会让测试只在中英某一种语言下通过。
+        XCTAssertEqual(SRS.humanized(0.01), String(localized: "马上"))
+        XCTAssertTrue(SRS.humanized(0.5).contains("720"))
     }
 }
 
@@ -80,7 +82,10 @@ final class ExporterTests: XCTestCase {
 
         XCTAssertTrue(markdown.contains("## 卡尔曼滤波"))
         XCTAssertTrue(markdown.contains("## 粒子滤波"))
-        XCTAssertTrue(markdown.contains("共 2 条笔记，1 条关联"))
+        // 导出文案本身是本地化的，断言必须走同一套表，
+        // 否则模拟器语言是英文时这里会红（而真机上是对的）。
+        // 模板里是 %lld 占位符，所以这里也要写成插值形式才能命中同一个键。
+        XCTAssertTrue(markdown.contains(String(localized: "共 \(2) 条笔记，\(1) 条关联。")))
         // 关联两个方向都要出现：只看一边会让人以为关系是单向的
         XCTAssertTrue(markdown.contains("[[粒子滤波]]"))
         XCTAssertTrue(markdown.contains("[[卡尔曼滤波]]"))
@@ -97,8 +102,8 @@ final class ExporterTests: XCTestCase {
 
     func testEmptyLibraryStillProducesHeader() {
         let markdown = Exporter.markdown(notes: [], links: [])
-        XCTAssertTrue(markdown.hasPrefix("# 织识导出"))
-        XCTAssertTrue(markdown.contains("共 0 条笔记"))
+        XCTAssertTrue(markdown.hasPrefix(String(localized: "# 织识导出 · ")))
+        XCTAssertTrue(markdown.contains(String(localized: "共 \(0) 条笔记，\(0) 条关联。")))
     }
 }
 

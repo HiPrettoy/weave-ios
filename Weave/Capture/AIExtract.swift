@@ -26,11 +26,11 @@ final class AIExtractor: ObservableObject {
     func run(_ raw: String) async -> Bool {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard text.count >= 6 else {
-            error = "内容太少，多写几句再提炼"
+            error = String(localized: "内容太少，多写几句再提炼")
             return false
         }
         guard LLMKeys.isEnabled else {
-            error = "云端增强没打开：到「设置」里填 API Key 并打开开关"
+            error = String(localized: "云端增强没打开：到「设置」里填 API Key 并打开开关")
             return false
         }
 
@@ -48,7 +48,7 @@ final class AIExtractor: ObservableObject {
             concepts = result.concepts
             tags = result.tags
             if !hasResult {
-                error = "模型返回的内容解析不出来，再点一次试试"
+                error = String(localized: "模型返回的内容解析不出来，再点一次试试")
                 return false
             }
             Haptics.success()
@@ -84,7 +84,7 @@ struct AIExtractPanel: View {
                         } else {
                             Image(systemName: "sparkles")
                         }
-                        Text(extractor.isWorking ? "正在提炼…" : "用 AI 提炼")
+                        Text(extractor.isWorking ? String(localized: "正在提炼…") : String(localized: "用 AI 提炼"))
                     }
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 14)
@@ -148,11 +148,11 @@ struct AIExtractPanel: View {
             }
 
             if !extractor.concepts.isEmpty {
-                chipRow(title: "概念", items: extractor.concepts, tint: Theme.accent, hashed: false)
+                chipRow(title: String(localized: "概念"), items: extractor.concepts, tint: Theme.accent, hashed: false)
             }
 
             if !extractor.tags.isEmpty {
-                chipRow(title: "标签", items: extractor.tags, tint: Theme.warm, hashed: true)
+                chipRow(title: String(localized: "标签"), items: extractor.tags, tint: Theme.warm, hashed: true)
             }
         }
         .card()

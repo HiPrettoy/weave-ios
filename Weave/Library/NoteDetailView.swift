@@ -142,7 +142,7 @@ struct NoteDetailView: View {
                 Image(systemName: note.isFavorite ? "star.fill" : "star")
                     .foregroundStyle(note.isFavorite ? Theme.warm : Theme.inkSoft)
             }
-            .accessibilityLabel(note.isFavorite ? "取消收藏" : "收藏")
+            .accessibilityLabel(note.isFavorite ? String(localized: "取消收藏") : String(localized: "收藏"))
         }
         .font(.caption)
         .foregroundStyle(Theme.inkSoft)
@@ -305,7 +305,7 @@ struct NoteDetailView: View {
                         } else {
                             Image(systemName: "sparkles")
                         }
-                        Text(isEnriching ? "正在提炼…" : "用 AI 提炼摘要与概念")
+                        Text(isEnriching ? String(localized: "正在提炼…") : String(localized: "用 AI 提炼摘要与概念"))
                     }
                     .font(.subheadline.weight(.medium))
                     .frame(maxWidth: .infinity)

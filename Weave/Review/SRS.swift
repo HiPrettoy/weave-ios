@@ -42,10 +42,10 @@ enum SRS {
     }
 
     static func humanized(_ days: Double) -> String {
-        if days <= 0 { return "现在" }
-        if days < 1.0 / 24.0 { return "马上" }
-        if days < 1 { return "\(Int((days * 24 * 60).rounded())) 分钟后" }
-        if days < 30 { return "\(Int(days.rounded())) 天后" }
-        return "\(Int((days / 30).rounded())) 个月后"
+        if days <= 0 { return String(localized: "现在") }
+        if days < 1.0 / 24.0 { return String(localized: "马上") }
+        if days < 1 { return String(localized: "\(Int((days * 24 * 60).rounded())) 分钟后") }
+        if days < 30 { return String(localized: "\(Int(days.rounded())) 天后") }
+        return String(localized: "\(Int((days / 30).rounded())) 个月后")
     }
 }

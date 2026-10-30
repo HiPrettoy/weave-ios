@@ -23,10 +23,10 @@ enum LLMEnricher {
 
         var errorDescription: String? {
             switch self {
-            case .missingKey: return "还没填 API Key"
-            case .badURL: return "接口地址格式不对"
-            case .http(let code, let body): return "接口返回 \(code)：\(Self.brief(body))"
-            case .emptyResponse(let detail): return "无法解析返回内容：\(Self.brief(detail))"
+            case .missingKey: return String(localized: "还没填 API Key")
+            case .badURL: return String(localized: "接口地址格式不对")
+            case .http(let code, let body): return String(localized: "接口返回 \(code)：\(Self.brief(body))")
+            case .emptyResponse(let detail): return String(localized: "无法解析返回内容：\(Self.brief(detail))")
             }
         }
 
@@ -112,7 +112,7 @@ enum LLMEnricher {
                 }
                 let ids = parseModelIDs(data)
                 if !ids.isEmpty { return ids }
-                lastError = EnrichError.emptyResponse(String(data: data, encoding: .utf8) ?? "返回为空")
+                lastError = EnrichError.emptyResponse(String(data: data, encoding: .utf8) ?? String(localized: "返回为空"))
             } catch let error as EnrichError {
                 throw error
             } catch {
@@ -172,7 +172,7 @@ enum LLMEnricher {
         guard let decoded = try? JSONDecoder().decode(Payload.self, from: data),
               let text = decoded.choices.first?.message?.content,
               !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw EnrichError.emptyResponse(String(data: data, encoding: .utf8) ?? "返回为空")
+            throw EnrichError.emptyResponse(String(data: data, encoding: .utf8) ?? String(localized: "返回为空"))
         }
         return ProbeResult(latencyMs: latency,
                            reply: text.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -221,7 +221,7 @@ enum LLMEnricher {
 
         let decoded = try JSONDecoder().decode(Payload.self, from: data)
         guard let text = decoded.choices.first?.message?.content, !text.isEmpty else {
-            throw EnrichError.emptyResponse("返回为空")
+            throw EnrichError.emptyResponse(String(localized: "返回为空"))
         }
         return parse(text)
     }

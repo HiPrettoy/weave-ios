@@ -1,6 +1,16 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
+    "# 织识导出 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weave export · %@"
+          }
+        }
+      }
+    },
     "#学习 #会议": {
       "localizations": {
         "en": {
@@ -71,12 +81,42 @@
         }
       }
     },
+    "%lld 个月后": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %lld months"
+          }
+        }
+      }
+    },
     "%lld 个节点，%lld 条连线，平均每条关联 %@ 个，当前缩放 %@ 倍": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld nodes, %lld links, avg %@ per node, zoom %@x"
+          }
+        }
+      }
+    },
+    "%lld 分钟后": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %lld min"
+          }
+        }
+      }
+    },
+    "%lld 天后": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %lld days"
           }
         }
       }
@@ -91,12 +131,72 @@
         }
       }
     },
+    "%lld 小时后": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %lld hours"
+          }
+        }
+      }
+    },
     "%lld 条": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld notes"
+          }
+        }
+      }
+    },
+    "- 摘要：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "- Summary: %@"
+          }
+        }
+      }
+    },
+    "- 时间：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "- Time: %@"
+          }
+        }
+      }
+    },
+    "- 来源：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "- Source: %@"
+          }
+        }
+      }
+    },
+    "- 标签：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "- Tags: %@"
+          }
+        }
+      }
+    },
+    "- 概念：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "- Concepts: %@"
           }
         }
       }
@@ -191,6 +291,26 @@
         }
       }
     },
+    "个月后": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "months later"
+          }
+        }
+      }
+    },
+    "云端增强没打开：到「设置」里填 API Key 并打开开关": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI enhancement is off. Add an API key in Settings and turn it on."
+          }
+        }
+      }
+    },
     "今天清空了": {
       "localizations": {
         "en": {
@@ -227,6 +347,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose from Photos"
+          }
+        }
+      }
+    },
+    "任一匹配": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any tag"
           }
         }
       }
@@ -271,12 +401,32 @@
         }
       }
     },
+    "停止录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop recording"
+          }
+        }
+      }
+    },
     "先在心里复述一遍，再点「看答案」": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Recall it in your head first, then tap Show answer"
+          }
+        }
+      }
+    },
+    "全部": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
           }
         }
       }
@@ -301,12 +451,32 @@
         }
       }
     },
+    "全部笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All notes"
+          }
+        }
+      }
+    },
     "共 %lld 张卡片在排队": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld cards queued"
+          }
+        }
+      }
+    },
+    "共 %lld 条笔记，%lld 条关联。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld notes, %lld links."
           }
         }
       }
@@ -361,6 +531,16 @@
         }
       }
     },
+    "关联：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Links: "
+          }
+        }
+      }
+    },
     "关闭": {
       "localizations": {
         "en": {
@@ -371,12 +551,32 @@
         }
       }
     },
+    "内容太少，多写几句再提炼": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too short — write a bit more first"
+          }
+        }
+      }
+    },
     "写长一点\n再打标签": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Write longer\nthen add tags"
+          }
+        }
+      }
+    },
+    "出错了": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong"
           }
         }
       }
@@ -401,6 +601,16 @@
         }
       }
     },
+    "分钟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "minutes"
+          }
+        }
+      }
+    },
     "列表来自 %@ 的 /models 接口。": {
       "localizations": {
         "en": {
@@ -417,6 +627,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Not in the list?"
+          }
+        }
+      }
+    },
+    "刚刚": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just now"
           }
         }
       }
@@ -447,6 +667,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete this note"
+          }
+        }
+      }
+    },
+    "删除这条笔记？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this note?"
           }
         }
       }
@@ -491,6 +721,16 @@
         }
       }
     },
+    "取消收藏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove favorite"
+          }
+        }
+      }
+    },
     "可以一起想起来": {
       "localizations": {
         "en": {
@@ -527,6 +767,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Same period"
+          }
+        }
+      }
+    },
+    "同时满足": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All tags"
           }
         }
       }
@@ -591,6 +841,16 @@
         }
       }
     },
+    "备份已生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup created"
+          }
+        }
+      }
+    },
     "备份是完整数据（笔记、关联、复习进度），换机或重装后导入即可回到原样。Markdown 导出只保留正文。": {
       "localizations": {
         "en": {
@@ -627,6 +887,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Review schedule"
+          }
+        }
+      }
+    },
+    "天后": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "days later"
+          }
+        }
+      }
+    },
+    "天后。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "days later."
           }
         }
       }
@@ -681,6 +961,26 @@
         }
       }
     },
+    "导出失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export failed"
+          }
+        }
+      }
+    },
+    "已关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
     "已删除这条笔记": {
       "localizations": {
         "en": {
@@ -697,6 +997,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reviewed %lld times · lapsed %lld times · interval %@"
+          }
+        }
+      }
+    },
+    "已开启": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        }
+      }
+    },
+    "已收藏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorited"
+          }
+        }
+      }
+    },
+    "已清空": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erased"
+          }
+        }
+      }
+    },
+    "已生成导出文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export file ready"
           }
         }
       }
@@ -731,6 +1071,36 @@
         }
       }
     },
+    "平均关联": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avg links"
+          }
+        }
+      }
+    },
+    "开始录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start recording"
+          }
+        }
+      }
+    },
+    "开始语音输入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start voice input"
+          }
+        }
+      }
+    },
     "当前的笔记、关联、复习进度都会被备份里的内容替换。": {
       "localizations": {
         "en": {
@@ -751,12 +1121,32 @@
         }
       }
     },
+    "性价比高，中文摘要够用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good value; Chinese summaries are solid"
+          }
+        }
+      }
+    },
     "恢复示例数据": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Restore sample data"
+          }
+        }
+      }
+    },
+    "恢复示例数据？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore sample data?"
           }
         }
       }
@@ -787,6 +1177,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Write"
+          }
+        }
+      }
+    },
+    "打开后按文本含义而不是字面匹配排序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rank by meaning instead of literal matches"
           }
         }
       }
@@ -831,6 +1231,36 @@
         }
       }
     },
+    "按当前参数重建关联": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rebuild links with current settings"
+          }
+        }
+      }
+    },
+    "按当前数据重算节点位置并复位缩放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recompute node positions from current data and reset zoom"
+          }
+        }
+      }
+    },
+    "按记忆程度推进下次复习时间": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push the next review out by how well you recalled it"
+          }
+        }
+      }
+    },
     "接口地址": {
       "localizations": {
         "en": {
@@ -841,12 +1271,72 @@
         }
       }
     },
+    "接口地址格式不对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Malformed base URL"
+          }
+        }
+      }
+    },
+    "推理更强，速度慢一些、更贵": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stronger reasoning, slower and pricier"
+          }
+        }
+      }
+    },
+    "搜索模型名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search model names"
+          }
+        }
+      }
+    },
+    "收藏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorite"
+          }
+        }
+      }
+    },
+    "收藏或删除这条笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorite or delete this note"
+          }
+        }
+      }
+    },
     "收起": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Dismiss"
+          }
+        }
+      }
+    },
+    "改成你自己电脑的局域网 IP": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Point at your own machine on the LAN"
           }
         }
       }
@@ -877,6 +1367,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Untitled note"
+          }
+        }
+      }
+    },
+    "智谱 GLM-4-Flash": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zhipu GLM-4-Flash"
           }
         }
       }
@@ -921,12 +1421,72 @@
         }
       }
     },
+    "月之暗面，长文本友好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moonshot, strong on long text"
+          }
+        }
+      }
+    },
+    "有免费额度，适合先试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free tier — good for trying"
+          }
+        }
+      }
+    },
+    "本地 vLLM / Ollama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local vLLM / Ollama"
+          }
+        }
+      }
+    },
+    "条关联": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "links"
+          }
+        }
+      }
+    },
+    "条笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "notes"
+          }
+        }
+      }
+    },
     "标签": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Tags"
+          }
+        }
+      }
+    },
+    "标签 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags %@"
           }
         }
       }
@@ -971,12 +1531,32 @@
         }
       }
     },
+    "概念": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concepts"
+          }
+        }
+      }
+    },
     "概括": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Summarize"
+          }
+        }
+      }
+    },
+    "模型返回的内容解析不出来，再点一次试试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not parse the model reply. Try again."
           }
         }
       }
@@ -1011,12 +1591,42 @@
         }
       }
     },
+    "正在提炼…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extracting…"
+          }
+        }
+      }
+    },
     "正在识别文字…": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Recognizing text…"
+          }
+        }
+      }
+    },
+    "正在重建…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rebuilding…"
+          }
+        }
+      }
+    },
+    "正在重建关联…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rebuilding links…"
           }
         }
       }
@@ -1031,12 +1641,62 @@
         }
       }
     },
+    "没开云端增强，到「设置」填 API Key 就能用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI enhancement is off. Add an API key in Settings to use it."
+          }
+        }
+      }
+    },
+    "没有匹配的笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching notes"
+          }
+        }
+      }
+    },
+    "没有同时命中这些标签的笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No notes match all of these tags"
+          }
+        }
+      }
+    },
+    "没有正文也没有图片，这条没能存下": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No text and no image, so nothing was saved."
+          }
+        }
+      }
+    },
     "没能取到模型列表": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't fetch the model list"
+          }
+        }
+      }
+    },
+    "没识别到文字。可以自己补一句描述，图片会一起存下来。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No text recognized. Add a description if you like — the image is saved with it."
           }
         }
       }
@@ -1081,6 +1741,16 @@
         }
       }
     },
+    "清空所有数据？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase all data?"
+          }
+        }
+      }
+    },
     "清空搜索": {
       "localizations": {
         "en": {
@@ -1111,6 +1781,26 @@
         }
       }
     },
+    "点按进入采集页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the capture page"
+          }
+        }
+      }
+    },
+    "点这里获取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to fetch"
+          }
+        }
+      }
+    },
     "点选快速填入": {
       "localizations": {
         "en": {
@@ -1127,6 +1817,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Version"
+          }
+        }
+      }
+    },
+    "现在": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
           }
         }
       }
@@ -1161,12 +1861,42 @@
         }
       }
     },
+    "用 AI 提炼": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract with AI"
+          }
+        }
+      }
+    },
+    "用 AI 提炼摘要与概念": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract summary and concepts with AI"
+          }
+        }
+      }
+    },
     "用作标题": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Use as title"
+          }
+        }
+      }
+    },
+    "用备份覆盖当前数据？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overwrite current data with the backup?"
           }
         }
       }
@@ -1207,6 +1937,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Knowledge graph"
+          }
+        }
+      }
+    },
+    "示例数据已恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample data restored"
           }
         }
       }
@@ -1331,6 +2071,26 @@
         }
       }
     },
+    "识别完成，可以再改一改": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognized — feel free to edit."
+          }
+        }
+      }
+    },
+    "识别结果会实时出现在下方，可以直接编辑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript appears below as you speak — you can edit it."
+          }
+        }
+      }
+    },
     "语义排序": {
       "localizations": {
         "en": {
@@ -1421,12 +2181,32 @@
         }
       }
     },
+    "还没填 API Key": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No API key yet"
+          }
+        }
+      }
+    },
     "还没有用过的标签，记下的笔记会自动带标签": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "No tags used yet. Notes are tagged automatically when you capture them."
+          }
+        }
+      }
+    },
+    "还没有笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No notes yet"
           }
         }
       }
@@ -1447,6 +2227,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "No nodes yet"
+          }
+        }
+      }
+    },
+    "这个地址": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "this address"
+          }
+        }
+      }
+    },
+    "这张图片读不出来，换一张试试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That image could not be read. Try another one."
           }
         }
       }
@@ -1491,12 +2291,32 @@
         }
       }
     },
+    "通义千问 Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qwen Plus"
+          }
+        }
+      }
+    },
     "采集": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Capture"
+          }
+        }
+      }
+    },
+    "采集，已选中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture, selected"
           }
         }
       }
@@ -1521,6 +2341,26 @@
         }
       }
     },
+    "间隔会重置，稍后再出现": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The interval resets, so it comes back soon"
+          }
+        }
+      }
+    },
+    "阿里云百炼，国内直连": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alibaba Cloud, direct in mainland China"
+          }
+        }
+      }
+    },
     "需要在系统设置里允许「语音识别」和「麦克风」": {
       "localizations": {
         "en": {
@@ -1531,12 +2371,32 @@
         }
       }
     },
+    "需要能直连 OpenAI 的网络": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs direct access to OpenAI"
+          }
+        }
+      }
+    },
     "音频设备变了，录音已停止，内容保留在上方": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The audio route changed, so recording stopped. Content is kept above."
+          }
+        }
+      }
+    },
+    "马上": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soon"
           }
         }
       }
