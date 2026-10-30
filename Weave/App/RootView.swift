@@ -16,17 +16,23 @@ struct RootView: View {
 
             // 五个页面都常驻，只靠透明度 + 命中测试切换。
             // 用 if 分支重建页面的话，切一次标签搜索词、导航层级全丢，体验会退步。
-            ZStack {
-                CaptureView().modifier(TabPage(active: router.tab == .capture))
-                LibraryView().modifier(TabPage(active: router.tab == .library))
-                GraphView().modifier(TabPage(active: router.tab == .graph))
-                ReviewView().modifier(TabPage(active: router.tab == .review))
-                SettingsView().modifier(TabPage(active: router.tab == .settings))
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if keyboardVisible {
-                    Color.clear.frame(height: 0)
-                } else {
+            //
+            // 标签栏用 VStack 分行走布局，不用 .safeAreaInset：
+            // 五个页面各自是 NavigationStack，而 NavigationStack 内部的页面不会接收
+            // 外层 .safeAreaInset 加出来的 inset（只认窗口自带的 Home 条 34pt）。
+            // 结果就是内容一路铺到屏幕底，复习页的主按钮「看答案」被标签栏整块盖住，
+            // 点下去命中的是「采集」（v1.0.11 自绘标签栏起就存在，v1.0.20 大字号下更明显）。
+            // 分行之后页面高度真的少了标签栏那一截，重叠从布局上就不可能发生。
+            VStack(spacing: 0) {
+                ZStack {
+                    CaptureView().modifier(TabPage(active: router.tab == .capture))
+                    LibraryView().modifier(TabPage(active: router.tab == .library))
+                    GraphView().modifier(TabPage(active: router.tab == .graph))
+                    ReviewView().modifier(TabPage(active: router.tab == .review))
+                    SettingsView().modifier(TabPage(active: router.tab == .settings))
+                }
+
+                if !keyboardVisible {
                     TabBar()
                 }
             }
