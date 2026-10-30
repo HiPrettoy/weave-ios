@@ -20,7 +20,10 @@ struct SettingsView: View {
     @State private var statusTask: Task<Void, Never>?
     @State private var exportURL: URL?
     @State private var backupURL: URL?
-    @State private var confirmRestore = false
+    /// Backups 目录里现有的可恢复文件。见 BackupStore 的注释：
+    /// 系统文件选择器在真机上点不动，所以「列目录 + 点一下」才是主路径。
+    @State private var backups: [BackupStore.Item] = []
+    @State private var confirmRestoreItem: BackupStore.Item?
     @State private var showRestorePicker = false
     @State private var confirmWipe = false
     @State private var confirmSeed = false
@@ -61,6 +64,30 @@ struct SettingsView: View {
         LLMKeys.setAPIKey(llmKey)
     }
 
+    /// confirmationDialog 要一个 Bool 绑定，但真正决定内容的是被点中的那一项，
+    /// 所以从 optional 反推。
+    private var isRestorePresented: Binding<Bool> {
+        Binding(
+            get: { confirmRestoreItem != nil },
+            set: { if !$0 { confirmRestoreItem = nil } }
+        )
+    }
+
+    /// 执行恢复。列表里点选和外部选文件两条路径最后都走这里。
+    private func restore(from data: Data) {
+        do {
+            let count = try store.restore(from: data)
+            exportURL = nil
+            backupURL = nil
+            backups = BackupStore.list()
+            status = String(localized: "已恢复 \(count) 条笔记")
+            Haptics.success()
+        } catch {
+            // 解码失败时 store.restore 已经抛错并且没有改动任何数据
+            status = String(localized: "这个文件不是有效的备份：\(error.localizedDescription)")
+        }
+    }
+
     private func handleRestore(_ result: Result<[URL], Error>) {
         switch result {
         case .failure(let error):
@@ -71,14 +98,11 @@ struct SettingsView: View {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             do {
-                let data = try Data(contentsOf: url)
-                let count = try store.restore(from: data)
-                exportURL = nil
-                backupURL = nil
-                status = String(localized: "已恢复 \(count) 条笔记")
-                Haptics.success()
+                // 先拷进 Backups：用户的原始文件不动，而且之后还能在列表里再点
+                let copied = try BackupStore.importExternal(url)
+                backups = BackupStore.list()
+                restore(from: try Data(contentsOf: copied))
             } catch {
-                // 解码失败时 store.restore 已经抛错并且没有改动任何数据
                 status = String(localized: "这个文件不是有效的备份：\(error.localizedDescription)")
             }
         }
@@ -139,7 +163,7 @@ struct SettingsView: View {
                     } header: {
                         Text("上次启动提示")
                     } footer: {
-                        Text("如果数据看起来不对，先别继续编辑 —— 用下面的「从备份文件恢复」把车倒回去。")
+                        Text("如果数据看起来不对，先别继续编辑 —— 用下面的「从备份恢复」把车倒回去。")
                     }
                 }
 
@@ -289,6 +313,7 @@ struct SettingsView: View {
                     Button {
                         do {
                             backupURL = try store.writeBackupFile()
+                            backups = BackupStore.list()
                             status = String(localized: "备份已生成")
                         } catch {
                             status = String(localized: "备份失败：\(error.localizedDescription)")
@@ -302,16 +327,64 @@ struct SettingsView: View {
                             Label("保存 / 分享备份文件", systemImage: "square.and.arrow.up")
                         }
                     }
+                } header: {
+                    Text("备份")
+                } footer: {
+                    Text("备份是一个 .weave 压缩包，里面有笔记文件与图片，换机或重装后导入即可回到原样。Markdown 导出只保留正文。")
+                }
+
+                Section {
+                    if backups.isEmpty {
+                        Text("还没有可恢复的备份。把 .weave 文件拖进「文件」App › 我的 iPhone › 织识 › Backups，这里就会列出来。")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.inkSoft)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        ForEach(backups) { item in
+                            Button {
+                                confirmRestoreItem = item
+                            } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(item.name)
+                                        .font(.body)
+                                        .foregroundStyle(Theme.ink)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                    Text("\(item.modifiedText) · \(item.sizeText)")
+                                        .font(.caption)
+                                        .foregroundStyle(Theme.inkSoft)
+                                }
+                            }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    BackupStore.remove(item)
+                                    backups = BackupStore.list()
+                                } label: {
+                                    Label("删除", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
 
                     Button {
-                        confirmRestore = true
+                        showRestorePicker = true
                     } label: {
-                        Label("从备份文件恢复", systemImage: "arrow.down.doc")
+                        Label("从其他位置选择文件", systemImage: "folder")
                     }
                 } header: {
-                    Text("备份与恢复")
+                    HStack {
+                        Text("从备份恢复")
+                        Spacer()
+                        Button {
+                            backups = BackupStore.list()
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel("刷新备份列表")
+                    }
                 } footer: {
-                    Text("备份是一个 .weave 压缩包，里面有笔记文件与图片，换机或重装后导入即可回到原样（旧版导出过的纯 JSON 备份也能导入）。Markdown 导出只保留正文。")
+                    Text("点一份备份就把它导回来，当前的笔记、关联与复习进度会被替换。导入前会自动把现有数据另存一份到 Backups，导错了还能倒回去。")
                 }
 
                 Section {
@@ -382,6 +455,7 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .task {
                 if llmKey.isEmpty { llmKey = LLMKeys.apiKey }
+                backups = BackupStore.list()
             }
             .onDisappear {
                 flushKey()
@@ -415,13 +489,18 @@ struct SettingsView: View {
                 }
                 Button("取消", role: .cancel) {}
             }
-            .confirmationDialog("用备份覆盖当前数据？", isPresented: $confirmRestore, titleVisibility: .visible) {
-                // 这一步只是打开文件选择器，真正覆盖发生在选完文件之后，
-                // 所以按钮不该标成 destructive —— 用户还有一次反悔机会。
-                Button("选择备份文件") { showRestorePicker = true }
-                Button("取消", role: .cancel) {}
-            } message: {
-                Text("当前的笔记、关联、复习进度都会被备份里的内容替换。")
+            .confirmationDialog("用这份备份覆盖当前数据？", isPresented: isRestorePresented, titleVisibility: .visible, presenting: confirmRestoreItem) { item in
+                Button("用这份备份覆盖") {
+                    do {
+                        restore(from: try BackupStore.read(item))
+                    } catch {
+                        status = String(localized: "这个文件不是有效的备份：\(error.localizedDescription)")
+                    }
+                    confirmRestoreItem = nil
+                }
+                Button("取消", role: .cancel) { confirmRestoreItem = nil }
+            } message: { item in
+                Text("「\(item.name)」会替换掉当前的笔记、关联与复习进度。导入前会自动把现有数据另存一份。")
             }
             .fileImporter(isPresented: $showRestorePicker,
                           // .weave 已经在 Info.plist 里声明过（UTExportedTypeDeclarations），

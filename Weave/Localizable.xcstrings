@@ -41,6 +41,16 @@
         }
       }
     },
+    "%@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@"
+          }
+        }
+      }
+    },
     "%@ · 相似度 %@": {
       "localizations": {
         "en": {
@@ -301,6 +311,16 @@
         }
       }
     },
+    "「%@」会替换掉当前的笔记、关联与复习进度。导入前会自动把现有数据另存一份。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” will replace your current notes, links and review progress. The current data is saved first."
+          }
+        }
+      }
+    },
     "上次启动提示": {
       "localizations": {
         "en": {
@@ -401,12 +421,22 @@
         }
       }
     },
-    "从备份文件恢复": {
+    "从其他位置选择文件": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Restore from a backup file"
+            "value": "Choose a file from elsewhere"
+          }
+        }
+      }
+    },
+    "从备份恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore from a backup"
           }
         }
       }
@@ -655,6 +685,16 @@
         }
       }
     },
+    "写不进 Backups 目录，设备存储可能满了": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not write to the Backups folder. The device may be out of space."
+          }
+        }
+      }
+    },
     "写长一点\n再打标签": {
       "localizations": {
         "en": {
@@ -771,6 +811,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete this note?"
+          }
+        }
+      }
+    },
+    "刷新备份列表": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh backup list"
           }
         }
       }
@@ -935,6 +985,16 @@
         }
       }
     },
+    "备份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup"
+          }
+        }
+      }
+    },
     "备份与恢复": {
       "localizations": {
         "en": {
@@ -961,6 +1021,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Backup created"
+          }
+        }
+      }
+    },
+    "备份是一个 .weave 压缩包，里面有笔记文件与图片，换机或重装后导入即可回到原样。Markdown 导出只保留正文。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A backup is a .weave archive holding the note file and its images, so you can move devices or reinstall and get everything back. The Markdown export keeps the text only."
           }
         }
       }
@@ -1045,7 +1115,7 @@
         }
       }
     },
-    "如果数据看起来不对，先别继续编辑 —— 用下面的「从备份文件恢复」把车倒回去。": {
+    "如果数据看起来不对，先别继续编辑 —— 用下面的「从备份恢复」把车倒回去。": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1311,16 +1381,6 @@
         }
       }
     },
-    "当前的笔记、关联、复习进度都会被备份里的内容替换。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The backup will replace the current notes, links and review progress."
-          }
-        }
-      }
-    },
     "录音启动失败：%@": {
       "localizations": {
         "en": {
@@ -1511,6 +1571,16 @@
         }
       }
     },
+    "接口返回 %lld：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP %lld: %@"
+          }
+        }
+      }
+    },
     "推理更强，速度慢一些、更贵": {
       "localizations": {
         "en": {
@@ -1607,6 +1677,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Untitled note"
+          }
+        }
+      }
+    },
+    "无法解析返回内容：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not parse the response: %@"
           }
         }
       }
@@ -2043,6 +2123,16 @@
         }
       }
     },
+    "点一份备份就把它导回来，当前的笔记、关联与复习进度会被替换。导入前会自动把现有数据另存一份到 Backups，导错了还能倒回去。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a backup to bring it back. Your current notes, links and review progress will be replaced; a copy of the current data is saved into Backups first, so you can always go back."
+          }
+        }
+      }
+    },
     "点开即相机\nOCR 提字": {
       "localizations": {
         "en": {
@@ -2169,6 +2259,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Overwrite current data with the backup?"
+          }
+        }
+      }
+    },
+    "用这份备份覆盖": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overwrite with this backup"
+          }
+        }
+      }
+    },
+    "用这份备份覆盖当前数据？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overwrite current data with this backup?"
           }
         }
       }
@@ -2463,12 +2573,32 @@
         }
       }
     },
+    "返回为空": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty response"
+          }
+        }
+      }
+    },
     "还没填 API Key": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "No API key yet"
+          }
+        }
+      }
+    },
+    "还没有可恢复的备份。把 .weave 文件拖进「文件」App › 我的 iPhone › 织识 › Backups，这里就会列出来。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No backups to restore yet. Drop a .weave file into Files › On My iPhone › Weave › Backups and it will show up here."
           }
         }
       }
@@ -2589,16 +2719,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Links"
-          }
-        }
-      }
-    },
-    "选择备份文件": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose a backup file"
           }
         }
       }

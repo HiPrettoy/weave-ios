@@ -483,12 +483,11 @@ final class AppStore: ObservableObject {
         let links = snapshot.links.filter { ids.contains($0.a) && ids.contains($0.b) }
         let cards = snapshot.cards.filter { ids.contains($0.noteID) }
 
-        // 覆盖之前把当前数据留在 Documents 里：导入错了还能捞回来。
-        // 出错不阻断，只是少一层保险。
-        let stamp = Int(Date().timeIntervalSince1970)
-        let safety = fileURL.deletingLastPathComponent()
-            .appendingPathComponent("weave-before-restore-\(stamp).weave")
-        try? makeBackup().write(to: safety, options: .atomic)
+        // 覆盖之前把当前数据留一份：导入错了还能捞回来。
+        // 落到 Backups 目录而不是 Documents 根，这样它在设置页的列表里也看得见，
+        // 不需要靠系统文件选择器去翻盘。出错不阻断，只是少一层保险。
+        let stamp = Formatters.fileStamp.string(from: Date())
+        try? BackupStore.save(makeBackup(), name: "restore-previous-\(stamp).weave")
 
         // 丢掉在途的防抖写：它带着旧快照，没必要再落一次盘
         saveWorkItem?.cancel()
@@ -519,12 +518,14 @@ final class AppStore: ObservableObject {
         return notes.count
     }
 
-    /// 写一个临时备份文件，交给系统的分享面板 / 文件选择器
+    /// 写一份备份到 `Documents/Backups/`，返回它的 URL（分享面板与列表都用这个）。
+    ///
+    /// 落在 Backups 而不是临时目录，是因为临时目录会被系统回收，
+    /// 而用户可能过一会儿才想起来要分享；顺便让这份文件在「文件」App 里也看得见。
+    @discardableResult
     func writeBackupFile() throws -> URL {
         let name = "weave-\(Formatters.fileStamp.string(from: Date())).weave"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-        try makeBackup().write(to: url, options: .atomic)
-        return url
+        return try BackupStore.save(try makeBackup(), name: name)
     }
 
     /// 为单条笔记补充摘要与概念（需要 API Key）
@@ -559,8 +560,14 @@ struct LLMConfig {
 
 enum BackupError: LocalizedError {
     case unreadable
+    case unwritable
 
     var errorDescription: String? {
-        String(localized: "既不是 .weave 压缩包，也不是旧版的 JSON 文件")
+        switch self {
+        case .unreadable:
+            return String(localized: "既不是 .weave 压缩包，也不是旧版的 JSON 文件")
+        case .unwritable:
+            return String(localized: "写不进 Backups 目录，设备存储可能满了")
+        }
     }
 }

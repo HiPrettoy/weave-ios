@@ -57,6 +57,7 @@ D:\DSH\weave-ios/
     │   ├── ImageTool.swift     ← 图片压缩（长边 1280px / JPEG 0.68，须在后台调）
     │   ├── ImageStore.swift    ← 图片文件（Documents/Images）+ NSCache，挡路径穿越
     │   ├── ZipArchive.swift    ← 自研极简 ZIP 读写（备份打包，存储模式不压缩）
+    │   ├── BackupStore.swift   ← Documents/Backups 的列表/读/写/导入（不靠文件选择器）
     │   ├── LLMKeys.swift       ← 预设服务商 + Keychain 读写
     │   └── NoteRow.swift       ← 列表行组件
     ├── Capture/
@@ -322,6 +323,7 @@ xcodebuild test -project Weave.xcodeproj -scheme Weave \
 | 两行说明被压成一行 | 入口卡片文案被截断 | `.lineLimit(2)` + `.fixedSize(horizontal:false, vertical:true)` |
 | 外层 `safeAreaInset` 传不进 `NavigationStack` | 自绘标签栏整块盖住页面底部（复习页「看答案」只露出 7px，点它命中的是「采集」） | 五页各自是 `NavigationStack`，它只认窗口自带的 Home 条 inset。改成 `VStack { ZStack{五页}; TabBar() }`，用布局真分配高度 |
 | `Text(cond ? "a" : "b")` 不走本地化 | 英文界面里三元表达式那几处仍是中文 | 三元会退化成 `String`，必须 `Text(cond ? String(localized:"a") : String(localized:"b"))` |
+| `fileImporter` 在真机上点不动文件 | 「从备份文件恢复」永远打不开文件（「取消」能点，文件网格是死的） | iOS 16 的选择器是进程内远程视图，合成点击落不进去。**别把它当唯一入口**：开 `UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace`，让备份落在 `Documents/Backups/`，设置页直接列目录点选（见 `BackupStore`） |
 
 ### 手势 / 状态机
 
@@ -384,6 +386,14 @@ xcodebuild test -project Weave.xcodeproj -scheme Weave \
   老 JSON 里的内联图会在导入后自动迁移成文件。
 - 迁移是一次性的、开机自动的：`AppStore.migrateInlineImages()` 在 `load()` 之后跑，
   成功后设置页会出现「数据迁移」提示条（`migrationNote`）。
+- **恢复不再依赖系统文件选择器**（1.0.23）：iOS 16 的 `fileImporter` 打开的是一个远程视图，
+  真机上合成点击落不进去（「取消」能点，文件网格是死的），文档选择器只能靠人手点。
+  所以改成「暴露目录 + 列列表」：`Info.plist` 打开 `UIFileSharingEnabled` 与
+  `LSSupportsOpeningDocumentsInPlace`，备份统一落在 `Documents/Backups/`
+  （`BackupStore`），用户在「文件」App 里把 `.weave` 拖进 `我的 iPhone › 织识 › Backups`，
+  设置页直接把目录列出来，点一份就恢复。`fileImporter` 只作为「从其他位置选择文件」的备用入口。
+  导入前的安全副本也从 `Documents/weave-before-restore-<stamp>.weave` 改成
+  `Backups/restore-previous-<stamp>.weave` —— 落在同一个列表里，导错了直接再点回来。
 
 **仍是「有意为之」的取舍**
 - 持久化还是一份 JSON，**每次保存仍整库编码**（现在只有几十 KB 量级的文字）。

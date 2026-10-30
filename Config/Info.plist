@@ -66,6 +66,14 @@
 			</dict>
 		</dict>
 	</array>
+	<!-- 让 App 的 Documents 出现在「文件」App 里：
+	     系统文件选择器（fileImporter）在真机上点不动文件网格，
+	     恢复备份不能只有那一条路。开着共享之后，用户把 .weave 拖进
+	     「我的 iPhone › 织识 › Backups」即可，设置页会直接列出来。 -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>织识需要相机权限，拍下书页、板书或屏幕，并提取其中的文字。</string>
 	<key>NSMicrophoneUsageDescription</key>

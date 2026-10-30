@@ -249,3 +249,108 @@ final class AppStoreRestoreTests: XCTestCase {
         XCTAssertTrue(store.cards.isEmpty)
     }
 }
+
+/// `BackupStore` 是「不靠系统文件选择器也能恢复」的那条路：
+/// 文件放在 `Documents/Backups/`，设置页直接列出来点一下就导入。
+/// 这里只验目录读写逻辑本身，不碰 UI。
+final class BackupStoreTests: XCTestCase {
+    private var created: [BackupStore.Item] = []
+
+    override func tearDown() {
+        for item in created { BackupStore.remove(item) }
+        created = []
+        super.tearDown()
+    }
+
+    /// 造一个只属于本用例的名字，避免和真机/其他用例留下的备份混淆
+    private func unique(_ suffix: String) -> String {
+        "test-\(UUID().uuidString.prefix(8))\(suffix)"
+    }
+
+    func testSaveThenListReturnsIt() throws {
+        let name = unique(".weave")
+        let url = try BackupStore.save(Data("hello".utf8), name: name)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+        defer { created.append(BackupStore.Item(name: name, url: url, modified: Date(), bytes: 5)) }
+
+        let items = BackupStore.list()
+        let found = try XCTUnwrap(items.first { $0.name == name }, "刚写进去的备份要出现在列表里")
+        XCTAssertEqual(found.bytes, 5)
+        XCTAssertEqual(found.sizeText.isEmpty, false, "列表要能显示大小")
+        XCTAssertEqual(found.modifiedText.isEmpty, false, "列表要能显示时间")
+    }
+
+    func testListIgnoresIrrelevantFiles() throws {
+        let bad = unique(".txt")
+        let good = unique(".json")
+        let badURL = try BackupStore.save(Data("x".utf8), name: bad)
+        let goodURL = try BackupStore.save(Data("y".utf8), name: good)
+        defer {
+            created.append(BackupStore.Item(name: bad, url: badURL, modified: Date(), bytes: 1))
+            created.append(BackupStore.Item(name: good, url: goodURL, modified: Date(), bytes: 1))
+        }
+
+        let names = BackupStore.list().map(\.name)
+        XCTAssertFalse(names.contains(bad), "只认 .weave 与 .json，别的扩展名不该混进恢复列表")
+        XCTAssertTrue(names.contains(good), "旧版的纯 JSON 备份也要能被找到")
+    }
+
+    func testListIsNewestFirst() throws {
+        let older = unique(".weave")
+        let newer = unique(".weave")
+        let olderURL = try BackupStore.save(Data("old".utf8), name: older)
+        let newerURL = try BackupStore.save(Data("new".utf8), name: newer)
+        defer {
+            created.append(BackupStore.Item(name: older, url: olderURL, modified: Date(), bytes: 3))
+            created.append(BackupStore.Item(name: newer, url: newerURL, modified: Date(), bytes: 3))
+        }
+        // 明确拉开修改时间，别依赖写入顺序碰巧一致
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_000)],
+                                             ofItemAtPath: olderURL.path)
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 2_000)],
+                                             ofItemAtPath: newerURL.path)
+
+        let names = BackupStore.list().map(\.name)
+        let newerIndex = try XCTUnwrap(names.firstIndex(of: newer))
+        let olderIndex = try XCTUnwrap(names.firstIndex(of: older))
+        XCTAssertLessThan(newerIndex, olderIndex, "最新的一份要排在最前面")
+    }
+
+    func testReadRoundTrip() throws {
+        let name = unique(".weave")
+        let payload = Data((0..<512).map { UInt8($0 % 251) })
+        let url = try BackupStore.save(payload, name: name)
+        defer { created.append(BackupStore.Item(name: name, url: url, modified: Date(), bytes: payload.count)) }
+
+        let item = try XCTUnwrap(BackupStore.list().first { $0.name == name })
+        XCTAssertEqual(try BackupStore.read(item), payload)
+    }
+
+    func testImportExternalKeepsOriginalAndDeduplicates() throws {
+        // 用户从「文件」App 挑来的文件：要拷进 Backups，但原文件不能动
+        let source = FileManager.default.temporaryDirectory.appendingPathComponent(unique(".weave"))
+        let payload = Data("external".utf8)
+        try payload.write(to: source)
+        defer { try? FileManager.default.removeItem(at: source) }
+
+        let first = try BackupStore.importExternal(source)
+        created.append(BackupStore.Item(name: first.lastPathComponent, url: first, modified: Date(), bytes: payload.count))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path), "原始文件不能被搬走或删掉")
+        XCTAssertEqual(try Data(contentsOf: first), payload)
+
+        // 同名再导一次：不能覆盖已经躺着的那份
+        let second = try BackupStore.importExternal(source)
+        created.append(BackupStore.Item(name: second.lastPathComponent, url: second, modified: Date(), bytes: payload.count))
+        XCTAssertNotEqual(first.lastPathComponent, second.lastPathComponent, "重名要加序号，别覆盖旧备份")
+        XCTAssertTrue(second.lastPathComponent.contains("-2"))
+    }
+
+    func testRemoveDeletesFile() throws {
+        let name = unique(".weave")
+        let url = try BackupStore.save(Data("bye".utf8), name: name)
+        let item = BackupStore.Item(name: name, url: url, modified: Date(), bytes: 3)
+        BackupStore.remove(item)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        XCTAssertFalse(BackupStore.list().map(\.name).contains(name))
+    }
+}
