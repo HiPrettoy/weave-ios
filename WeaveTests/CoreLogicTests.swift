@@ -258,7 +258,7 @@ final class ModelIdentityTests: XCTestCase {
     }
 
     func testMergeTagsKeepsExistingFirst() {
-        let merged = mergeTags(existing: "旧标签", incoming: "新标签,旧标签")
+        let merged = mergeTags(existing: "旧标签", incoming: ["新标签", "旧标签"])
         XCTAssertEqual(parseTags(merged), ["旧标签", "新标签"])
     }
 }
