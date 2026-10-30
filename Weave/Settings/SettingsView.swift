@@ -106,11 +106,20 @@ struct SettingsView: View {
                     Menu {
                         ForEach(LLMKeys.presets) { preset in
                             Button {
+                                // 地址和模型名必须一起写：只改地址会让请求带着上一家的
+                                // 模型名发过去（例如选 Kimi 仍发 deepseek-chat），必然 4xx。
                                 llmBaseURL = preset.baseURL
+                                llmModel = preset.model
                                 testMessage = nil
                                 Haptics.tap()
                             } label: {
-                                Text("\(preset.name) — \(preset.baseURL)")
+                                let matched = LLMKeys.matchedPresetID(baseURL: llmBaseURL,
+                                                                      model: llmModel) == preset.id
+                                if matched {
+                                    Label("\(preset.name)", systemImage: "checkmark")
+                                } else {
+                                    Text("\(preset.name) — \(preset.baseURL)")
+                                }
                             }
                         }
                     } label: {

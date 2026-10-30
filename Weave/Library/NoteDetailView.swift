@@ -16,6 +16,10 @@ struct NoteDetailView: View {
     @State private var isEnriching = false
     @State private var errorMessage: String?
     @State private var confirmDelete = false
+    /// 防抖落库的句柄：编辑时只改本地草稿，停下 0.6 秒或离开页面才写回 store
+    @State private var pendingSave: Task<Void, Never>?
+    /// 进入页面时这条笔记的索引文本。离开时只有它变了才值得跑整库重算关联。
+    @State private var indexingAtEntry = ""
 
     /// 展示用的笔记：本地草稿 → store 实时值 → 调用方带进来的快照
     private var resolved: Note? {
@@ -33,7 +37,10 @@ struct NoteDetailView: View {
             }
         }
         .onAppear {
-            if draft == nil { draft = resolved }
+            if draft == nil {
+                draft = resolved
+                indexingAtEntry = resolved?.indexingText ?? ""
+            }
         }
         .navigationTitle("笔记")
         .navigationBarTitleDisplayMode(.inline)
@@ -81,9 +88,16 @@ struct NoteDetailView: View {
         }
         .background(Theme.background.ignoresSafeArea())
         .onDisappear {
-            // 离开时统一重算一次关联，避免每敲一个字都跑一遍 O(n²)
+            // 先把还在防抖窗口里的编辑落库，再决定要不要重算关联。
+            // 旧实现在这里无条件 rebuildLinks()，等于每次「点开看一眼就退出」
+            // 都跑一遍整库 O(n²)，而这些笔记的索引文本根本没变。
+            flushPendingSave()
             store.saveNow()
-            store.rebuildLinks()
+            if let note = draft, note.indexingText != indexingAtEntry {
+                store.rebuildLinks()
+                // 重算过了就更新基线：页面再出现时不该重复付这笔钱。
+                indexingAtEntry = note.indexingText
+            }
         }
         .confirmationDialog("删除这条笔记？", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("删除", role: .destructive) {
@@ -326,10 +340,33 @@ struct NoteDetailView: View {
             set: { newValue in
                 guard var current = resolved else { return }
                 current[keyPath: keyPath] = newValue
+                // 旧实现在这里直接 store.update()：notes 是 @Published，
+                // 每敲一个字符就会让常驻的五个页面全部重算 body，
+                // 而且 updatedAt 每键都跳一次，笔记在列表里上下乱窜。
+                // 现在只写本地草稿，停手 0.6 秒后再整体落库一次。
                 draft = current
-                store.update(current)
+                schedulePendingSave(current)
             }
         )
+    }
+
+    private func schedulePendingSave(_ note: Note) {
+        // 取消在途的防抖任务：Task.sleep 会因取消抛出，因此旧的 update 不会执行。
+        pendingSave?.cancel()
+        pendingSave = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            guard !Task.isCancelled else { return }
+            store.update(note)
+            pendingSave = nil
+        }
+    }
+
+    /// 离开页面前把防抖窗口里还没落库的编辑立即写回
+    private func flushPendingSave() {
+        guard pendingSave != nil else { return }
+        pendingSave?.cancel()
+        pendingSave = nil
+        if let note = draft { store.update(note) }
     }
 
     private func addTag() {
@@ -340,22 +377,26 @@ struct NoteDetailView: View {
         }
         tagInput = ""
         draft = current
-        store.update(current)
+        schedulePendingSave(current)
     }
 
     private func removeTag(_ tag: String) {
         guard var current = resolved else { return }
         current.tags.removeAll { $0 == tag }
         draft = current
-        store.update(current)
+        schedulePendingSave(current)
     }
 
     private func enrich(_ note: Note) {
+        // 先把手头未落库的编辑写回，否则 AI 结果回来时会被防抖任务里那份旧草稿盖掉。
+        flushPendingSave()
         isEnriching = true
         Task {
             do {
                 try await store.enrich(note, config: LLMKeys.config)
                 draft = store.note(id: noteID) ?? initial
+                // enrich 内部已经重建过关联，同步基线，免得离开页面时再白跑一遍 O(n²)。
+                indexingAtEntry = draft?.indexingText ?? ""
             } catch {
                 errorMessage = error.localizedDescription
             }
