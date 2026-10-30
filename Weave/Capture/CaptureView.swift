@@ -288,9 +288,23 @@ struct CaptureView: View {
                     .foregroundStyle(Theme.ink)
                 Spacer()
                 if !store.notes.isEmpty {
-                    Text("共 \(store.notes.count) 条 · ⋯ 可收藏/删除")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.inkSoft)
+                    // 「查看全部」放在标题行右侧：列表底部没有多余空间放整行入口
+                    Button {
+                        router.goLibrary()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("全部 \(store.notes.count) 条")
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.semibold))
+                        }
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(Theme.accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(Theme.accentSoft))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
@@ -331,26 +345,6 @@ struct CaptureView: View {
                         if index < recent.count - 1 {
                             Divider().opacity(0.4)
                         }
-                    }
-
-                    // 列表只展示最近 3 条，剩余的从这里进笔记页
-                    if store.notes.count > recent.count {
-                        Divider().opacity(0.4)
-                        Button {
-                            router.goLibrary()
-                        } label: {
-                            HStack {
-                                Text("查看全部 \(store.notes.count) 条")
-                                    .font(.footnote.weight(.medium))
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
-                            }
-                            .foregroundStyle(Theme.accent)
-                            .padding(.vertical, 10)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 16)
