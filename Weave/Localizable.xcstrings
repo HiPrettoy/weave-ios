@@ -94,9 +94,21 @@
     "%lld 个月后": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "in %lld months"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "in %lld month"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "in %lld months"
+                }
+              }
+            }
           }
         }
       }
@@ -124,9 +136,21 @@
     "%lld 天后": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "in %lld days"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "in %lld day"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "in %lld days"
+                }
+              }
+            }
           }
         }
       }
@@ -134,9 +158,21 @@
     "%lld 字": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld characters"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld character"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld characters"
+                }
+              }
+            }
           }
         }
       }
@@ -144,9 +180,21 @@
     "%lld 小时后": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "in %lld hours"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "in %lld hour"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "in %lld hours"
+                }
+              }
+            }
           }
         }
       }
@@ -154,9 +202,21 @@
     "%lld 条": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld notes"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld note"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld notes"
+                }
+              }
+            }
           }
         }
       }
@@ -444,9 +504,21 @@
     "全部 %lld 条": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All %lld notes"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "All %lld note"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "All %lld notes"
+                }
+              }
+            }
           }
         }
       }
@@ -474,9 +546,21 @@
     "共 %lld 张卡片在排队": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld cards queued"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld card queued"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld cards queued"
+                }
+              }
+            }
           }
         }
       }
@@ -1064,9 +1148,21 @@
     "已恢复 %lld 条笔记": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Restored %lld notes"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Restored %lld note"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Restored %lld notes"
+                }
+              }
+            }
           }
         }
       }
@@ -1104,9 +1200,21 @@
     "已记下（%lld 个标签），正在建立关联": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saved with %lld tags, building links"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Saved with %lld tag, building links"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Saved with %lld tags, building links"
+                }
+              }
+            }
           }
         }
       }
@@ -1124,9 +1232,21 @@
     "已重建：%lld 条关联": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld links rebuilt"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld link rebuilt"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld links rebuilt"
+                }
+              }
+            }
           }
         }
       }
@@ -1734,9 +1854,21 @@
     "每条最多关联 %lld 条": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "At most %lld links per note"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "At most %lld link per note"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "At most %lld links per note"
+                }
+              }
+            }
           }
         }
       }
