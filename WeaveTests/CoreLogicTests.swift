@@ -247,6 +247,12 @@ final class ModelIdentityTests: XCTestCase {
         XCTAssertEqual(Note(title: "", content: "", source: .voice).displayTitle, "语音笔记")
     }
 
+    func testFullTitleKeepsLongTitleIntact() {
+        let long = String(repeating: "字", count: 40)
+        // 导出与双链引用走 fullTitle：截断会把用户写的东西弄丢
+        XCTAssertEqual(Note(title: long, content: "").fullTitle, long)
+    }
+
     func testDisplayTitleTruncatesLongTitles() {
         let long = String(repeating: "字", count: 40)
         let title = Note(title: long, content: "").displayTitle

@@ -91,7 +91,9 @@ struct Note: Identifiable, Codable, Hashable {
         self.embedding = []
     }
 
-    var displayTitle: String {
+    /// 不截断的标题：标题为空时退回正文首行，再退回来源。
+    /// 导出与双链引用必须用这个 —— 截断的标题写进 Markdown 会把用户的内容弄丢。
+    var fullTitle: String {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedTitle.isEmpty { return trimmedTitle }
         let firstLine = content
@@ -106,7 +108,13 @@ struct Note: Identifiable, Codable, Hashable {
             default: return "无标题笔记"
             }
         }
-        return trimmed.count > 22 ? String(trimmed.prefix(22)) + "…" : trimmed
+        return trimmed
+    }
+
+    /// 界面用的标题：统一截到 22 个字，避免长标题在列表与图谱里整条溢出。
+    var displayTitle: String {
+        let full = fullTitle
+        return full.count > 22 ? String(full.prefix(22)) + "…" : full
     }
 
     var snippet: String {

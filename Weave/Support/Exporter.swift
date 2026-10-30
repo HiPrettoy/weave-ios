@@ -20,7 +20,7 @@ enum Exporter {
         output += "共 \(notes.count) 条笔记，\(links.count) 条关联。\n\n"
 
         for note in notes.sorted(by: { $0.createdAt > $1.createdAt }) {
-            output += "## \(note.displayTitle)\n\n"
+            output += "## \(note.fullTitle)\n\n"
             output += "- 时间：\(formatter.string(from: note.createdAt))\n"
             output += "- 来源：\(note.source.label)\n"
             if !note.tags.isEmpty {
@@ -36,7 +36,7 @@ enum Exporter {
 
             if let related = relatedMap[note.id], !related.isEmpty {
                 output += "关联："
-                output += related.prefix(6).map { "[[\($0.displayTitle)]]" }.joined(separator: " ")
+                output += related.prefix(6).map { "[[\($0.fullTitle)]]" }.joined(separator: " ")
                 output += "\n\n"
             }
             output += "---\n\n"
